@@ -10,10 +10,10 @@ using namespace std;
 GpioProcessor *gpioProcessor = nullptr;
 Gpio *sensor1 = nullptr;
 Gpio *sensor2 = nullptr;
-int treshold_ms = 1000; // 1 second
+int treshold_ms = 100; // 1 second
 
 
-void printState(const char*, const char*);
+void execAction(const char*, const char*);
 
 int main() {
 	gpioProcessor = new GpioProcessor();
@@ -45,11 +45,11 @@ int main() {
 		auto duration = duration_cast<milliseconds>(stop - comboStart); 
 
 		if (!executingAction && duration.count() >= treshold_ms) {
-			executingAction = true;
-			printState(val1, val2);
+			//executingAction = true;
+			execAction(val1, val2);
 		}
 
-		usleep(1000); // microseconds!!!
+		usleep(100); // microseconds!!!
 	}
 
 	gpioProcessor->cleanPins();
@@ -59,17 +59,23 @@ int main() {
 	return 0;
 }
 
-void printState(const char* val1, const char* val2) {
+int dir = 1;
+void execAction(const char* val1, const char* val2) {
 	if (*val1 == '1' && *val2 == '1') {
-		cout << "  BOTH" << endl;
+		if (dir == 1) {
+			system("xte 'mousermove -3 0'");
+		}
+		else {
+			system("xte 'mousermove 3 0'");
+		}
 	}
 	else if (*val1 == '1') {
-		cout << "LEFT" << endl;
+		system("xte 'mousermove 0 -3'");
 	}
 	else if (*val2 == '1') {
-		cout << "RIGHT" << endl;
+		system("xte 'mousermove 0 3'");
 	}
 	else {
-		cout << "__" << endl;
+		dir *= -1;
 	}
 }

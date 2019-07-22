@@ -7,10 +7,10 @@ using namespace std;
 
 int main() {
 
-	cout << "start" << endl;
-	auto start = high_resolution_clock::now(); 
+	//cout << "start" << endl;
+	//auto start = high_resolution_clock::now(); 
 
-	while (true) {
+	/*while (true) {
 		auto stop = high_resolution_clock::now();
 		auto duration = duration_cast<milliseconds>(stop - start); 
 
@@ -18,7 +18,9 @@ int main() {
 			start = high_resolution_clock::now(); 
 			cout << duration.count() << endl;
 		}
-	}
+	}*/
+
+	system("xte 'mouseclick 1'");
 
 	return 0;
 }
