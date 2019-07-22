@@ -45,7 +45,7 @@ int main() {
 		auto duration = duration_cast<milliseconds>(stop - comboStart); 
 
 		if (!executingAction && duration.count() >= treshold_ms) {
-			//executingAction = true;
+			executingAction = true;
 			execAction(val1, val2);
 		}
 
@@ -63,19 +63,20 @@ int dir = 1;
 void execAction(const char* val1, const char* val2) {
 	if (*val1 == '1' && *val2 == '1') {
 		if (dir == 1) {
-			system("xte 'mousermove -3 0'");
+			system("xte 'mousermove -30 0'");
 		}
 		else {
-			system("xte 'mousermove 3 0'");
+			system("xte 'mousermove 30 0'");
 		}
 	}
 	else if (*val1 == '1') {
-		system("xte 'mousermove 0 -3'");
+		system("xte 'mousermove 0 -30'");
 	}
 	else if (*val2 == '1') {
-		system("xte 'mousermove 0 3'");
+		system("xte 'mousermove 0 30'");
 	}
 	else {
+		cout << "no action-" << flush;
 		dir *= -1;
 	}
 }

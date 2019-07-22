@@ -127,7 +127,7 @@ class Gpio {
 	*/
 	char* Gpio::getValue() {
 
-		cout << "Getting value" << endl;
+//		cout << "Getting value" << endl;
 
 	    FILE *fp;
 	    char buff[255];
@@ -137,7 +137,7 @@ class Gpio {
 
 	    fp = fopen(destination, "r");
 	    fscanf(fp, "%s", buff);
-	    printf("%s\n", buff );
+//	    printf("%s\n", buff );
 
 	    fclose(fp);
 

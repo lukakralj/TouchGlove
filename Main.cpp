@@ -20,7 +20,7 @@ int main() {
 		}
 	}*/
 
-	system("xte 'mouseclick 1'");
+	system("xte 'mousermove 100 100'");
 
 	return 0;
 }
