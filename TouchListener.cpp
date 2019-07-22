@@ -10,7 +10,7 @@ using namespace std;
 GpioProcessor *gpioProcessor = nullptr;
 Gpio *sensor1 = nullptr;
 Gpio *sensor2 = nullptr;
-int treshold_ms = 100; // 1 second
+int threshold_ms = 100; // 1 second
 
 
 void execAction(const char*, const char*);
@@ -44,8 +44,8 @@ int main() {
 		auto stop = high_resolution_clock::now();
 		auto duration = duration_cast<milliseconds>(stop - comboStart); 
 
-		if (!executingAction && duration.count() >= treshold_ms) {
-			//executingAction = true;
+		if (!executingAction && duration.count() >= threshold_ms) {
+			executingAction = true;
 			execAction(val1, val2);
 		}
 
