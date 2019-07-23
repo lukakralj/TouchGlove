@@ -11,43 +11,57 @@ using namespace std;
 
 Gpio sensLeft(26, "in");
 Gpio sensRight(29, "in");
-int threshold_ms = 100; // 1 second
+int threshold_ms = 100; // 0.1 second
 
-void execAction(const string, const string);
+void applyAction(const string, const string);
 void onStop(int sig);
 
 int main() {
 	signal(SIGTERM, onStop);
 	signal(SIGINT, onStop);
 
-	string val1 = "";
-	string val2 = "";
-	auto comboStart = high_resolution_clock::now();
-	bool executingAction = false;
-	string temp1 = "";
-	string temp2 = "";
+	string curActionVal1 = "";
+	string curActionVal2 = "";
+
+	string candidateVal1 = "";
+	string candidateVal2 = "";
+
+	auto changeStartTime = high_resolution_clock::now();
+	
+	string lastRead1 = "";
+	string lastRead2 = "";
+	
+	//bool executingAction = false;
+	
 
 	while (true) {
-		temp1 = sensLeft.readValue();
-		temp2 = sensRight.readValue();
+		lastRead1 = sensLeft.readValue();
+		lastRead2 = sensRight.readValue();
 
-		if (val1 == "" || temp1 != val1 || temp2 != val2) {
-			executingAction = false;
-			comboStart = high_resolution_clock::now();
+		if (curActionVal1 == "") {
+			// Happens only once at the beginning
+			curActionVal1 = lastRead1;
+			curActionVal2 = lastRead2;
+		}
+		else if (lastRead1 != candidateVal1 || lastRead2 != candidateVal2) {
+			// A change occurred - start timing the change
+			candidateVal1 = lastRead1;
+			candidateVal2 = lastRead2;
+			changeStartTime = high_resolution_clock::now();
+		} // else candidate value did not change
+
+		if (candidateVal1 != curActionVal1 || candidateVal2 != curActionVal2) {
+			// A different action is wanted - check for threshold.
+			auto timeSinceLastChange = duration_cast<milliseconds>(high_resolution_clock::now() - changeStartTime);
+			if (timeSinceLastChange.count() >= threshold_ms) {
+				curActionVal1 = candidateVal1;
+				curActionVal2 = candidateVal2;
+			}
 		}
 
-		val1 = temp1;
-		val2 = temp2;
+		applyAction(curActionVal1, curActionVal2);
 
-		auto stop = high_resolution_clock::now();
-		auto duration = duration_cast<milliseconds>(stop - comboStart); 
-
-		if (!executingAction && duration.count() >= threshold_ms) {
-			executingAction = true;
-			execAction(val1, val2);
-		}
-
-		usleep(100); // microseconds!!!
+		usleep(1000); // 1 ms (param in microseconds!!!)
 	}
 
 	return 0;
@@ -62,7 +76,7 @@ void onStop(int sig) {
 }
 
 int dir = 1;
-void execAction(const string val1, const string val2) {
+void applyAction(const string val1, const string val2) {
 	if (val1 == "1" && val2 == "1") {
 		if (dir == 1) {
 			cout << "move left" << endl;

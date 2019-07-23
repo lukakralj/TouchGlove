@@ -92,7 +92,7 @@ string Gpio::getDirection() {
 	*/
 string Gpio::readValue() {
 	string cmd = "cat " + getValuePath();
-	return exec(cmd); 
+	return exec(cmd).substr(0,1); 
 }
 
 /* sets pin high */
