@@ -1,39 +1,37 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "GpioProcessor.h"
+#include "Gpio.h"
 #include <unistd.h>
 #include <chrono> 
+#include <signal.h>
+
 using namespace std::chrono; 
 using namespace std;
 
-GpioProcessor *gpioProcessor = nullptr;
-Gpio *sensor1 = nullptr;
-Gpio *sensor2 = nullptr;
+Gpio sensLeft(26, "in");
+Gpio sensRight(29, "in");
 int threshold_ms = 100; // 1 second
 
-
-void execAction(const char*, const char*);
+void execAction(const string, const string);
+void onStop(int sig);
 
 int main() {
-	gpioProcessor = new GpioProcessor();
+	signal(SIGTERM, onStop);
+	signal(SIGINT, onStop);
 
-	sensor1 = gpioProcessor->getPin26();
-	sensor2 = gpioProcessor->getPin29();
-
-	sensor1->setIn();
-	sensor2->setIn();
-
-	char* val1 = nullptr;
-	char* val2 = nullptr;
+	string val1 = "";
+	string val2 = "";
 	auto comboStart = high_resolution_clock::now();
 	bool executingAction = false;
+	string temp1 = "";
+	string temp2 = "";
 
 	while (true) {
-		char* temp1 = sensor1->getValue();
-		char* temp2 = sensor2->getValue();
+		temp1 = sensLeft.readValue();
+		temp2 = sensRight.readValue();
 
-		if (val1 == nullptr || *temp1 != *val1 || *temp2 != *val2) {
+		if (val1 == "" || temp1 != val1 || temp2 != val2) {
 			executingAction = false;
 			comboStart = high_resolution_clock::now();
 		}
@@ -52,30 +50,39 @@ int main() {
 		usleep(100); // microseconds!!!
 	}
 
-	gpioProcessor->cleanPins();
-	delete (gpioProcessor);
-	delete (sensor1);
-	delete (sensor2);
 	return 0;
 }
 
+void onStop(int sig) {
+	cout << "Intercepted sig: " << sig << endl;
+	sensLeft.unexportPin();
+	sensRight.unexportPin();
+	cout << "Pins exported." << endl;
+	exit(0);
+}
+
 int dir = 1;
-void execAction(const char* val1, const char* val2) {
-	if (*val1 == '1' && *val2 == '1') {
+void execAction(const string val1, const string val2) {
+	if (val1 == "1" && val2 == "1") {
 		if (dir == 1) {
-			system("xte 'mousermove -3 0'");
+			cout << "move left" << endl;
+			//system("xte 'mousermove -3 0'");
 		}
 		else {
-			system("xte 'mousermove 3 0'");
+			cout << "move right" << endl;
+			//system("xte 'mousermove 3 0'");
 		}
 	}
-	else if (*val1 == '1') {
-		system("xte 'mousermove 0 -3'");
+	else if (val1 == "1") {
+		cout << "move up" << endl;
+		//system("xte 'mousermove 0 -3'");
 	}
-	else if (*val2 == '1') {
-		system("xte 'mousermove 0 3'");
+	else if (val2 == "1") {
+		cout << "move down" << endl;
+		//system("xte 'mousermove 0 3'");
 	}
 	else {
+		cout << "no action" << endl;
 		dir *= -1;
 	}
 }

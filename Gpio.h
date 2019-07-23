@@ -1,174 +1,171 @@
-/*
- * Gpio.cpp
- *
- *  Created on: 18 de jul de 2017
- *      Author: ermiston.tavares
- */
-
 #include <iostream>
 #include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstring>
+#include <cstdio>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <array>
 
 #define HIGH "1"
 #define LOW "0"
 #define OUT "out"
 #define IN "in"
 
+#define PATH_EXPORT "/sys/class/gpio/export"
+#define PATH_UNEXPORT "/sys/class/gpio/unexport"
+
 using namespace std;
+
+string exec(const string);
+int convertPhysicalPin(int);
 
 class Gpio {
 
 	private:
-		char* gpio_pin;
+		string pinNo;
+		string dir;
+
+		string getDirPath();
+		string getValuePath();
+		void exportPin();
 
 	public:
-		Gpio(char*);
-		void setDirection(char*);
-		void setValue(char*);
-		char* getDirection();
-		char* getValue();
+		Gpio(int, string);
+		string getDirection();
+		string readValue();
 		void setHigh();
 		void setLow();
-		void setOut();
-		void setIn();
+		void unexportPin();
 };
-	/*
+
+struct InvalidDirectionException : public exception {
+   const char * what () const throw () {
+      return "Unknown direction set to the pin.";
+   }
+};
+
+struct InvalidPhysicalPinException : public exception {
+   const char * what () const throw () {
+      return "Invalid pin number - could not be exported.";
+   }
+};
+
+struct InvalidOperationException : public exception {
+   const char * what () const throw () {
+      return "Invalid operation for this pin type.";
+   }
+};
+
+/*
 	 * gets the pin defined by the integer. This number does not always
 	 * correspond with the pin number: For example, on the IFC6410, GPIO pin 21
 	 * corresponds to the operating system pin number 6.
 	 */
-	Gpio::Gpio(char* pin) {
-		cout << "Initializing pin " << pin << endl;
-		gpio_pin = pin;
+Gpio::Gpio(int physicalPin, string direction) {
+	pinNo = to_string(convertPhysicalPin(physicalPin));
+	if (direction != OUT && direction != IN) {
+		throw InvalidDirectionException();
 	}
+	dir = direction;
+	
+	exportPin();
+	// set direction
+	string cmd = "echo " + dir + " > " + getDirPath();
+	exec(cmd);
+}
 
-	/**
-	 * Set pin direction.
-	 * @param pin Desirable pin.
-	 * @param pin Direction of pin.
-	 *      in -> Input.
-	 *      out -> Output.
-	 *
-	 */
-	void Gpio::setDirection(char* direction) {
-		cout << "Setting Direction" << endl;
-
-		char destination[100];
-
-    	sprintf(destination, "/sys/class/gpio/gpio%s/direction", gpio_pin);
-
-		FILE *fp;
-
-		fp = fopen(destination, "w");
-
-		if(fp == NULL) {
-		    puts("Error open file");
-		    exit(EXIT_FAILURE);
-		}
-
-		fprintf(fp, "%s",direction);
-		fclose(fp);
-	}
-
-	/**
-	 * Set pin value.
-	 * @param pin Desirable pin.
-	 * @param value Value of pin.
-	 * 	0 -> Low Level.
-	 *	1 -> High Level
-	 */
-	void Gpio::setValue(char* value) {
-		cout << "Setting value" << endl;
-
-		char destination[100];
-
-		sprintf(destination, "/sys/class/gpio/gpio%s/value", gpio_pin);
-
-		FILE *fp;
-
-		fp = fopen(destination, "w");
-		fprintf(fp, value);
-		fclose(fp);
-	}
-
-	/*Get pin direction.
+/*Get pin direction.
 		in -> Input.
 		out -> Output.
 	*/
-	char* Gpio::getDirection() {
+string Gpio::getDirection() {
+	string cmd = "cat " + getDirPath();
+	return exec(cmd);
+}
 
-		cout << "Getting Direction" << endl;
-
-		FILE *fp;
-	    char buff[255];
-	    char destination[100];
-
-	    sprintf(destination, "/sys/class/gpio/gpio%s/direction", gpio_pin);
-
-	    fp = fopen(destination, "r");
-	    fscanf(fp, "%s", buff);
-	    printf("%s\n", buff );
-
-	    fclose(fp);
-
-	    char *direction = (char*)calloc(1024, sizeof(buff));
-	    strcpy(direction, buff);
-
-	    return direction;
-
-	}
-
-
-	/*Get pin value.
+/*Get pin value.
 		0 -> Low Level.
 		1 -> High Level
 	*/
-	char* Gpio::getValue() {
+string Gpio::readValue() {
+	string cmd = "cat " + getValuePath();
+	return exec(cmd); 
+}
 
-		cout << "Getting value" << endl;
+/* sets pin high */
+void Gpio::setHigh() {
+	if (dir == IN) {
+		throw InvalidOperationException();
+	}
+	string cmd = "echo 1 > " + getValuePath();
+	exec(cmd); 
+}
 
-	    FILE *fp;
-	    char buff[255];
-	    char destination[100];
+/* sets pin low */
+void Gpio::setLow() {
+	if (dir == IN) {
+		throw InvalidOperationException();
+	}
+	string cmd = "echo 0 > " + getValuePath();
+	exec(cmd); 
+}
 
-	    sprintf(destination, "/sys/class/gpio/gpio%s/value", gpio_pin);
+string Gpio::getDirPath() {
+	return "/sys/class/gpio/gpio" + pinNo + "/direction";
+}
 
-	    fp = fopen(destination, "r");
-	    fscanf(fp, "%s", buff);
-	    printf("%s\n", buff );
+string Gpio::getValuePath() {
+	return "/sys/class/gpio/gpio" + pinNo + "/value";
+}
 
-	    fclose(fp);
+void Gpio::exportPin() {
+	string cmd = "echo " + pinNo + " > /sys/class/gpio/export";
+	exec(cmd);
+}
 
-	    char *value = (char*)calloc(1024, sizeof(buff));
-	    strcpy(value, buff);
+void Gpio::unexportPin() {
+	string cmd = "echo " + pinNo + " > /sys/class/gpio/unexport";
+	exec(cmd);
+}
 
-	    return value;
+int convertPhysicalPin(int pin) {
+    switch (pin) {
+        case 24: return 12; // B
+        case 25: return 13; // C
+        case 26: return 69; // D 
+        case 27: return 115; // E
+        case 28: return 4; // F
+        case 29: return 24; // G 
+        case 30: return 25; // H 
+        case 31: return 35; // I
+        case 32: return 34; // J
+        case 33: return 28; // K
+        case 34: return 33; // L
+        default: throw InvalidPhysicalPinException();
+    }
+}
 
+/**
+ * Execute the command and return its stdout.
+ */
+string exec(const string cmd) {
+	char cstr[cmd.size() + 1];
+	strcpy(cstr, cmd.c_str());
+
+	array<char, 128> buffer;
+	string result;
+	unique_ptr<FILE, decltype(&pclose)> pipe(popen(cstr, "r"), pclose);
+	if (!pipe)
+	{
+		throw runtime_error("popen() failed!");
+	}
+	while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
+	{
+		result += buffer.data();
 	}
 
-	/* sets pin high */
-	void Gpio::setHigh() {
-		setValue((char *)HIGH);
-	}
-
-	/* sets pin low */
-	void Gpio::setLow() {
-		setValue((char *)LOW);
-	}
-
-	/* sets pin to output */
-	void Gpio::setOut() {
-		setDirection((char *)"out");
-	}
-
-	/* sets pin to input */
-	void Gpio::setIn() {
-		setDirection((char *)"in");
-	}
-
-
-
-
-
+	return result;
+}
