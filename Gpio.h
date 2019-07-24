@@ -1,3 +1,11 @@
+/*
+ * Gpio class helps managing the GPIO pins on the Dragonboard 410c.
+ * This will only work for the board that runs Debian.
+ * 
+ * @author Luka Kralj
+ * @version 1.0
+ */
+
 #include <iostream>
 #include <fstream>
 #include <stdio.h>
@@ -60,10 +68,15 @@ struct InvalidOperationException : public exception {
 };
 
 /*
-	 * gets the pin defined by the integer. This number does not always
-	 * correspond with the pin number: For example, on the IFC6410, GPIO pin 21
-	 * corresponds to the operating system pin number 6.
-	 */
+ * Initialise pin by exporting it and setting its direction.
+ * In practice, pins won't change their direction often, hence changing
+ * the direction can be done by unexporting the current pin and then re-initialise 
+ * it again with a different direction.
+ * 
+ * @param physicalPin Physical number of the pin as shown on the board schematic; 
+ * 						must be between 24 and 34 inclusive.
+ * @param direction "out" for output pin, "in" for input pin.
+ */
 Gpio::Gpio(int physicalPin, string direction) {
 	pinNo = to_string(convertPhysicalPin(physicalPin));
 	if (direction != OUT && direction != IN) {
@@ -72,30 +85,37 @@ Gpio::Gpio(int physicalPin, string direction) {
 	dir = direction;
 	
 	exportPin();
+
 	// set direction
 	string cmd = "echo " + dir + " > " + getDirPath();
 	exec(cmd);
 }
 
-/*Get pin direction.
-		in -> Input.
-		out -> Output.
-	*/
+/*
+ * Get direction of the pin.
+ * 
+ * @return "in" if this is input pin, "out" if this is output pin
+ */
 string Gpio::getDirection() {
 	string cmd = "cat " + getDirPath();
 	return exec(cmd);
 }
 
-/*Get pin value.
-		0 -> Low Level.
-		1 -> High Level
-	*/
+/*
+ * Return the current value at the pin.
+ * 
+ * @return "1" if the voltage at the pin is currently high, "0" if the voltage is low.
+ */
 string Gpio::readValue() {
 	string cmd = "cat " + getValuePath();
-	return exec(cmd).substr(0,1); 
+	return exec(cmd); 
 }
 
-/* sets pin high */
+/*
+ * Set high voltage on the pin (turn it "on").
+ * 
+ * @throws InvalidOperationException if this is an input pin.
+ */
 void Gpio::setHigh() {
 	if (dir == IN) {
 		throw InvalidOperationException();
@@ -104,7 +124,11 @@ void Gpio::setHigh() {
 	exec(cmd); 
 }
 
-/* sets pin low */
+/*
+ * Set low voltage on the pin (turn it "off").
+ * 
+ * @throws InvalidOperationException if this is an input pin.
+ */
 void Gpio::setLow() {
 	if (dir == IN) {
 		throw InvalidOperationException();
@@ -113,24 +137,42 @@ void Gpio::setLow() {
 	exec(cmd); 
 }
 
+/*
+ * @return Absolute path for "direction" file of the pin.
+ */
 string Gpio::getDirPath() {
 	return "/sys/class/gpio/gpio" + pinNo + "/direction";
 }
 
+/*
+ * @return Absolute path for "value" file of the pin.
+ */
 string Gpio::getValuePath() {
 	return "/sys/class/gpio/gpio" + pinNo + "/value";
 }
 
+/*
+ * @return Absolute path for "export" file.
+ */
 void Gpio::exportPin() {
 	string cmd = "echo " + pinNo + " > /sys/class/gpio/export";
 	exec(cmd);
 }
 
+/*
+ * @return Absolute path for "unexport" file.
+ */
 void Gpio::unexportPin() {
 	string cmd = "echo " + pinNo + " > /sys/class/gpio/unexport";
 	exec(cmd);
 }
 
+/*
+ * Converts physical pin number into a coresponding
+ * system pin number.
+ * 
+ * @return Pin number that should be used in all terminal commands.
+ */
 int convertPhysicalPin(int pin) {
     switch (pin) {
         case 24: return 12; // B
@@ -149,22 +191,43 @@ int convertPhysicalPin(int pin) {
 }
 
 /**
- * Execute the command and return its stdout.
+ * Execute the command and return its stdout - or if there was
+ * an error, return empty string. In case of an error the whole output
+ * is written on the screen.
+ * If the final character is a line break \n it will be removed.
+ * 
+ * @return Output of the command, or empty string if there was an error.
  */
-string exec(const string cmd) {
-	char cstr[cmd.size() + 1];
-	strcpy(cstr, cmd.c_str());
+string exec(string cmd) {
+	cmd += " 2>&1";
 
 	array<char, 128> buffer;
 	string result;
-	unique_ptr<FILE, decltype(&pclose)> pipe(popen(cstr, "r"), pclose);
-	if (!pipe)
-	{
+
+	FILE* pipe = popen(cmd.c_str(), "r");
+	if (!pipe) {
 		throw runtime_error("popen() failed!");
 	}
-	while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
-	{
+	while (fgets(buffer.data(), buffer.size(), pipe) != NULL) {
 		result += buffer.data();
+	}
+
+	int exitCode = pclose(pipe);
+
+	if (exitCode != 0) {
+		// An error occurred.
+		cout << "============" << endl;
+		cout << "Command: '" << cmd << "' failed with exit code: " << exitCode << endl;
+		cout << "Combined command output is:" << endl;
+		cout << result << endl;
+		cout << "============" << endl;
+		result = "";
+	}
+	else {
+		// Remove final line break \n if there is any.
+		if (result.at(result.size() - 1) == '\n') {
+			result = result.substr(0, result.size() - 1);
+		}
 	}
 
 	return result;

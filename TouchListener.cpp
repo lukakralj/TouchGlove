@@ -88,6 +88,9 @@ void onStop(int sig) {
 }
 
 int dir = 1;
+/*
+Apply xte actions: https://linux.die.net/man/1/xte
+*/
 void applyAction(const string val1, const string val2) {
 	if (val1 == "1" && val2 == "1") {
 		if (dir == 1) {
