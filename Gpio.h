@@ -1,4 +1,4 @@
-/*
+/**
  * Gpio class helps managing the GPIO pins on the Dragonboard 410c.
  * This will only work for the board that runs Debian.
  * 
@@ -43,7 +43,7 @@ class Gpio {
 	public:
 		Gpio(int, string);
 		string getDirection();
-		string readValue();
+		int readValue();
 		void setHigh();
 		void setLow();
 		void unexportPin();
@@ -67,7 +67,7 @@ struct InvalidOperationException : public exception {
    }
 };
 
-/*
+/**
  * Initialise pin by exporting it and setting its direction.
  * In practice, pins won't change their direction often, hence changing
  * the direction can be done by unexporting the current pin and then re-initialise 
@@ -91,7 +91,7 @@ Gpio::Gpio(int physicalPin, string direction) {
 	exec(cmd);
 }
 
-/*
+/**
  * Get direction of the pin.
  * 
  * @return "in" if this is input pin, "out" if this is output pin
@@ -101,17 +101,17 @@ string Gpio::getDirection() {
 	return exec(cmd);
 }
 
-/*
+/**
  * Return the current value at the pin.
  * 
  * @return "1" if the voltage at the pin is currently high, "0" if the voltage is low.
  */
-string Gpio::readValue() {
+int Gpio::readValue() {
 	string cmd = "cat " + getValuePath();
-	return exec(cmd); 
+	return (exec(cmd) == "1" ? 1 : 0); 
 }
 
-/*
+/**
  * Set high voltage on the pin (turn it "on").
  * 
  * @throws InvalidOperationException if this is an input pin.
@@ -124,7 +124,7 @@ void Gpio::setHigh() {
 	exec(cmd); 
 }
 
-/*
+/**
  * Set low voltage on the pin (turn it "off").
  * 
  * @throws InvalidOperationException if this is an input pin.
@@ -137,21 +137,21 @@ void Gpio::setLow() {
 	exec(cmd); 
 }
 
-/*
+/**
  * @return Absolute path for "direction" file of the pin.
  */
 string Gpio::getDirPath() {
 	return "/sys/class/gpio/gpio" + pinNo + "/direction";
 }
 
-/*
+/**
  * @return Absolute path for "value" file of the pin.
  */
 string Gpio::getValuePath() {
 	return "/sys/class/gpio/gpio" + pinNo + "/value";
 }
 
-/*
+/**
  * @return Absolute path for "export" file.
  */
 void Gpio::exportPin() {
@@ -159,7 +159,7 @@ void Gpio::exportPin() {
 	exec(cmd);
 }
 
-/*
+/**
  * @return Absolute path for "unexport" file.
  */
 void Gpio::unexportPin() {
@@ -167,7 +167,7 @@ void Gpio::unexportPin() {
 	exec(cmd);
 }
 
-/*
+/**
  * Converts physical pin number into a coresponding
  * system pin number.
  * 
