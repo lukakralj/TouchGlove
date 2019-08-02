@@ -1,6 +1,7 @@
 /**
  * Gpio class helps managing the GPIO pins on the Dragonboard 410c.
- * This will only work for the board that runs Debian.
+ * This will only work for the board that runs Debian. Must be ran as
+ * sudo user.
  * 
  * @author Luka Kralj
  * @version 1.0
@@ -50,19 +51,19 @@ class Gpio {
 };
 
 struct InvalidDirectionException : public exception {
-   const char * what () const throw () {
+   const char* what () const throw () {
       return "Unknown direction set to the pin.";
    }
 };
 
 struct InvalidPhysicalPinException : public exception {
-   const char * what () const throw () {
+   const char* what () const throw () {
       return "Invalid pin number - could not be exported.";
    }
 };
 
 struct InvalidOperationException : public exception {
-   const char * what () const throw () {
+   const char* what () const throw () {
       return "Invalid operation for this pin type.";
    }
 };
@@ -152,7 +153,7 @@ string Gpio::getValuePath() {
 }
 
 /**
- * @return Absolute path for "export" file.
+ * Exports the pin. Pin is ready to use after exporting.
  */
 void Gpio::exportPin() {
 	string cmd = "echo " + pinNo + " > /sys/class/gpio/export";
@@ -160,7 +161,8 @@ void Gpio::exportPin() {
 }
 
 /**
- * @return Absolute path for "unexport" file.
+ * Unexports pin. Pin cannot be used after unexporting. Must
+ * be called at the end of the program to clean up.
  */
 void Gpio::unexportPin() {
 	string cmd = "echo " + pinNo + " > /sys/class/gpio/unexport";
