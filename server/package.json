@@ -1,0 +1,22 @@
+{
+  "name": "touch-glove-server",
+  "version": "1.0.0",
+  "description": "App that runs on a PCs and responds to signals sent from the Dragonboard.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lukakralj/TouchGlove.git"
+  },
+  "keywords": [
+    "API"
+  ],
+  "author": "Luka Kralj",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lukakralj/TouchGlove/issues"
+  },
+  "homepage": "https://github.com/lukakralj/TouchGlove#readme"
+}
