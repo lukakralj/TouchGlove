@@ -24,27 +24,16 @@ let ngrokUrl = undefined;
     console.log("Ngrok could not start.");
 });
 
+let actionManager = require('./action-manager');
 let app = require('express')();
 app.listen(ngrokOpts.addr, () => {
     console.log("Server waiting...");
 });
 
-
-app.get("/test", (req, res) => {
-    console.log(req);
-    res.status(200).send({
-        msg: "All good fam"
-    });
+app.get('/sens/:actionId', (req, res) => {
+    actionManager.dispatchAction(parseInt(req.params.actionId));
+    return res.status(200).send();
 });
-
-
-
-
-
-
-
-
-
 
 /** Block Ctrl+C plus graceful shutdown. */
 process.on('SIGINT', () => {
@@ -62,7 +51,6 @@ process.on('SIGTERM', () => {
 async function onExit() {
     console.log("Stopping...");
     try {
-        await ngrok.disconnect();
         await ngrok.kill();
         console.log("Disconnected ngrok.");
     }
@@ -70,5 +58,6 @@ async function onExit() {
         console.log(err);
         process.exit(1);
     }
+    console.log("Exiting...");
     process.exit(0);
 }
