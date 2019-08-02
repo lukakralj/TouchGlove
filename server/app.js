@@ -8,7 +8,7 @@
  */
 
 const ngrok = require('ngrok');
-let ngrokOpts = {
+const ngrokOpts = {
     "proto": "http",
     "addr": 5637
 }
@@ -24,8 +24,8 @@ let ngrokUrl = undefined;
     console.log("Ngrok could not start.");
 });
 
-let actionManager = require('./action-manager');
-let app = require('express')();
+const actionManager = require('./action-manager');
+const app = require('express')();
 app.listen(ngrokOpts.addr, () => {
     console.log("Server waiting...");
 });
