@@ -15,7 +15,7 @@ using namespace std;
 
 int threshold_ms = 25;
 
-int encodeAction(const int[], int);
+unsigned int encodeAction(const int[], int);
 void triggerAction(const int);
 void onStop(int sig);
 void testEncodeAction();
@@ -25,6 +25,10 @@ int numOfSensors = 2;
 Gpio sensors[] = {
 	Gpio(26,"in"), 
 	Gpio(29, "in") };
+
+// Specifies the state of sensors in which all the triggers are considered to be off.
+// Must be in binary.
+unsigned int configurationMask = 0b0;
 
 // Set up all the control variables
 auto now = high_resolution_clock::now();
@@ -43,8 +47,10 @@ int main() {
 	assert (numOfSensors == (sizeof(changeTimers)/sizeof(changeTimers[0])));
 	assert (numOfSensors == (sizeof(curAction)/sizeof(curAction[0])));
 	assert (numOfSensors == (sizeof(candidates)/sizeof(candidates[0])));
-	assert (numOfSensors == (sizeof(lastRead)/sizeof(lastRead)));
+	assert (numOfSensors == (sizeof(lastRead)/sizeof(lastRead[0])));
+#if !defined(NDEBUG)	
 	testEncodeAction();
+#endif
 
 	cout << "Setup complete. Listening..." << endl;
 	while (true) {
@@ -53,7 +59,7 @@ int main() {
 
 			if (curAction[i] == -1) {
 				// Happens only once at the beginning
-				curAction[i] == lastRead[i];
+				curAction[i] = lastRead[i];
 			}
 			else {
 				// A change might have occurred - start timing the change
@@ -102,29 +108,51 @@ void onStop(int sig) {
  * @param length Length of the array.
  * @return Number describing the current state of the sensors.
  */
-int encodeAction(const int sensorValues[], int length) {
-	int encoded = 0;
-	int multiplier = 1;
-	for (int i = length - 1; i >= 0; --i) {
-		encoded += multiplier * sensorValues[i];
-		multiplier *= 10;
+unsigned int encodeAction(const int sensorValues[], int length) {
+	unsigned int encoded = 0;
+
+	for (int i = 0; i < length; ++i) {
+		encoded <<= 1;
+		encoded += (unsigned int) sensorValues[i];
 	}
+
+	encoded ^= configurationMask;
 	return encoded;
 }
 
 void testEncodeAction() {
+	unsigned int originalMask = configurationMask;
+
+	configurationMask = 0b0;
 	int hundred[] = {1,0,0};
-	assert (encodeAction(hundred, 3) == 100);
+	assert (encodeAction(hundred, 3) == 0b100);
 	int thousand[] = {1,0,0,0};
-	assert (encodeAction(thousand, 4) == 1000);
+	assert (encodeAction(thousand, 4) == 0b1000);
 	int oneOhOne[] = {1,0,1};
-	assert (encodeAction(oneOhOne, 3) == 101);
+	assert (encodeAction(oneOhOne, 3) == 0b101);
 	int one[] = {1};
 	assert (encodeAction(one, 1) == 1);
 	int zero[] = {};
 	assert (encodeAction(zero, 0) == 0);
 	int rand[] = {1,0,0,1,1,1,0};
-	assert (encodeAction(rand, 7) == 1001110);
+	assert (encodeAction(rand, 7) == 0b1001110);
+
+	// Test with mask = 0110
+	configurationMask = 0b0110;
+	int test1[] = {1,0,0,0};
+	assert (encodeAction(test1, 4) == 0b1110);
+	int test2[] = {0,0,0,0};
+	assert (encodeAction(test2, 4) == 0b0110);
+	int test3[] = {0,1,1,0};
+	assert (encodeAction(test3, 4) == 0b0000);
+	int test4[] = {1,0,1,0};
+	assert (encodeAction(test4, 4) == 0b1100);
+	int test5[] = {1,0,0,1};
+	assert (encodeAction(test5, 4) == 0b1111);
+	int test6[] = {0,1,0,1};
+	assert (encodeAction(test6, 4) == 0b0011);
+
+	configurationMask = originalMask;
 }
 
 void triggerAction(const int encoding) {
