@@ -10,8 +10,8 @@ lower = np.array([110, 100, 100])
 upper = np.array([130, 255, 255])
 frameW = 600
 frameH = -1 # calculated below
-moveTreshold = 0 #pixels
-screenBorder = 20 #pixels
+moveTreshold = 3 #pixels
+screenBorder = 40 #pixels
 
 # get screen size
 cmd = ['xrandr']
@@ -53,7 +53,8 @@ def processMove(center, radius):
             diffX = 0
         if abs(diffY) < moveTreshold:
             diffY = 0
-        diffX *= XscaleFactor
+        
+        diffX *= XscaleFactor * -1 # multiply by -1 to change direction because of mirroring
         diffY *= YscaleFactor
 
         if diffX != 0 or diffY != 0:
@@ -116,18 +117,3 @@ while True:
 
 vs.stop()
 cv2.destroyAllWindows()
-
-prevCenter = None
-prevRadius = -1
-
-
-def processMove(center, radius):
-    if center is None:
-        prevCenter = None
-        prevRadius = -1
-    elif prevCenter is None:
-        prevCenter = center
-        prevRadius = radius
-    else:
-        diffX = center[0] - prevCenter[0]
-        diffY = center[1] - prevCenter[1]
