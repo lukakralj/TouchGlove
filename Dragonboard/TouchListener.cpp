@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <chrono> 
 #include <signal.h>
+#include <stdlib.h>
 
 // Uncomment the bottom line to disable assertions.
 //#define NDEBUG 
@@ -28,7 +29,7 @@ Gpio sensors[] = {
 
 // Specifies the state of sensors in which all the triggers are considered to be off.
 // Must be in binary.
-unsigned int configurationMask = 0b0;
+unsigned int configurationMask = 0b00;
 
 // Set up all the control variables
 auto now = high_resolution_clock::now();
@@ -39,7 +40,13 @@ int curAction[] = { -1, -1 };
 int candidates[] = { -1, -1 };
 int lastRead[] = { -1, -1 };
 
-int main() {
+string serverUrl = "";
+int main(int argc, char** argv) {
+	if (argc < 2) {
+		cout << "Missing URL parameter." << endl;
+		exit(1);
+	}
+	serverUrl = *argv[1];
 	signal(SIGTERM, onStop);
 	signal(SIGINT, onStop);
 
@@ -87,7 +94,7 @@ int main() {
 }
 
 void onStop(int sig) {
-	cout << "Intercepted sig: " << sig << endl;
+	cout << "Intercepted signal: " << sig << endl;
 	for (int i = 0; i < numOfSensors; ++i) {
 		sensors[i].unexportPin();
 	}
@@ -116,7 +123,7 @@ unsigned int encodeAction(const int sensorValues[], int length) {
 		encoded += (unsigned int) sensorValues[i];
 	}
 
-	encoded ^= configurationMask;
+	encoded ^= configurationMask; // XOR
 	return encoded;
 }
 
@@ -157,4 +164,7 @@ void testEncodeAction() {
 
 void triggerAction(const int encoding) {
 	cout << "Triggered: " << encoding << endl;
+	// TODO: send request
+	string command = "curl " + serverUrl + "/sens/" + to_string(encoding);
+	system(command.c_str());
 }
