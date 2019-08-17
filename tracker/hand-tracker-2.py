@@ -12,6 +12,9 @@ import os
 #upper = np.array([70, 255, 255])
 lower = np.array([75, 100, 100]) #more natural green
 upper = np.array([95, 255, 255])
+#lower = np.array([160, 100, 100]) #red (sometimes it interacts with some parts of skin)
+#upper = np.array([180, 255, 255])
+
 
 frameW = 600
 frameH = -1 # calculated below
@@ -35,22 +38,21 @@ screenH = int(screenH) - screenBorder
 
 frameH = int(float(frameW * screenH) / float(screenW))
 
-XscaleFactor = float(screenW) / float(frameW)
+XscaleFactor = (float(screenW) / float(frameW)) * -1 # multiply by -1 to change direction because of mirroring
 YscaleFactor = float(screenH) / float(frameH)
+scaleFactors = (XscaleFactor, YscaleFactor)
 
 started = False
 prevCenter = None
 prevRadius = -1
 curRadiusFlickers = 0
-curMoveXFlickers = 0
-curMoveYFlickers = 0
+curMoveFlickers = [0, 0]
 def processMove(center, radius):
     if not started: 
         return
 
     global prevCenter
     global prevRadius
-    global curRadiusFlickers
     global curMoveXFlickers
     global curMoveYFlickers
 
@@ -61,48 +63,61 @@ def processMove(center, radius):
         prevCenter = center
         prevRadius = radius
     else:
-        diffX = float(center[0]) - float(prevCenter[0])
-        diffY = float(center[1]) - float(prevCenter[1])
+        diffX = calculateDiff(center, 0)
+        diffY = calculateDiff(center, 1)  
 
-        if abs(diffX) < moveTreshold_lower:
-            diffX = 0
-            curMoveXFlickers = 0
-        elif abs(diffX) > moveTreshold_upper and curMoveXFlickers < flickerFramesTreshold:
-            diffX = 0
-            curMoveXFlickers += 1
-        elif curMoveXFlickers == flickerFramesTreshold:
-            curMoveXFlickers = 0
-
-        if abs(diffY) < moveTreshold_lower:
-            diffY = 0
-            curMoveYFlickers = 0
-        elif abs(diffY) > moveTreshold_upper and curMoveYFlickers < flickerFramesTreshold:
-            diffY = 0
-            curMoveYFlickers += 1
-        elif curMoveYFlickers == flickerFramesTreshold:
-            curMoveYFlickers = 0
-
-        diffX *= XscaleFactor * -1 # multiply by -1 to change direction because of mirroring
-        diffY *= YscaleFactor
-
-        diffR = radius - prevRadius
-        
-        radiusCorrect = True
-        if abs(diffR) > radiusTreshold and curRadiusFlickers < flickerFramesTreshold:
-            radiusCorrect = False
-            curRadiusFlickers += 1
-        elif abs(diffR) > radiusTreshold and curRadiusFlickers == flickerFramesTreshold:
-            radiusCorrect = True
-            curRadiusFlickers = 0
-
-        if radiusCorrect and (diffX != 0 or diffY != 0):
+        if isRadiusCorrect(radius) and (diffX != 0 or diffY != 0):
             cmd = 'xte "mousermove {} {}"'.format(int(diffX), int(diffY))
             os.system(cmd)
             prevCenter = center
             prevRadius = radius
 
+# calculate the diff of the coordinate
+# ind = 0 for X, ind = 1 for Y
+# return float
+def calculateDiff(center, ind):
+    global curMoveFlickers
+    diff = float(center[ind]) - float(prevCenter[ind])
+    if abs(diff) < moveTreshold_lower:
+        diff = 0
+        curMoveFlickers[ind] = 0
+    elif abs(diff) > moveTreshold_upper and curMoveFlickers[ind] < flickerFramesTreshold:
+        diff = 0
+        curMoveFlickers[ind] += 1
+    elif curMoveFlickers[ind] == flickerFramesTreshold:
+        curMoveFlickers[ind] = 0
 
+    diff *= scaleFactors[ind]
+    return diff
 
+# check if the radius is correct
+# return True/False
+def isRadiusCorrect(radius):
+    global curRadiusFlickers
+    diffR = radius - prevRadius
+    radiusCorrect = True
+    if abs(diffR) > radiusTreshold and curRadiusFlickers < flickerFramesTreshold:
+        radiusCorrect = False
+        curRadiusFlickers += 1
+    elif abs(diffR) > radiusTreshold and curRadiusFlickers == flickerFramesTreshold:
+        radiusCorrect = True
+        curRadiusFlickers = 0
+    return radiusCorrect
+
+# resets the moving control variables to default
+# if the tracker target is covered and then moved and uncovered again
+# this will enable similar effect to lifting and moving a mouse
+def resetMovement():
+    global started
+    global prevCenter
+    global prevRadius
+    global curRadiusFlickers
+    global curMoveFlickers
+    started = False
+    prevCenter = None
+    prevRadius = -1
+    curRadiusFlickers = 0
+    curMoveFlickers = [0, 0]
 
 vs = VideoStream(src=0).start()
 time.sleep(2.0)
@@ -126,8 +141,7 @@ while True:
     mask = cv2.erode(mask, None, iterations=2)
     mask = cv2.dilate(mask, None, iterations=2)
 
-    cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
-                            cv2.CHAIN_APPROX_SIMPLE)
+    cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cnts = imutils.grab_contours(cnts)
     center = None
 
@@ -146,8 +160,11 @@ while True:
             cv2.circle(frame, (int(x), int(y)), int(radius),
                        (0, 255, 255), 2)
             cv2.circle(frame, center, 5, (0, 0, 255), -1)
-
             processMove((x,y), radius)
+        else: 
+            resetMovement()
+    else:
+        resetMovement()
 
     cv2.imshow("Frame", frame)
     key = cv2.waitKey(1) & 0xFF
