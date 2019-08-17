@@ -6,11 +6,19 @@ import time
 import subprocess
 import os
 
-lower = np.array([110, 100, 100])
-upper = np.array([130, 255, 255])
+#lower = np.array([110, 100, 100]) blue (often confused with black)
+#upper = np.array([130, 255, 255]) blue
+#lower = np.array([50, 100, 100]) #green (as in green-screen, did not match anything unless a very fake green (which is good))
+#upper = np.array([70, 255, 255])
+lower = np.array([75, 100, 100]) #more natural green
+upper = np.array([95, 255, 255])
+
 frameW = 600
 frameH = -1 # calculated below
-moveTreshold = 3 #pixels
+moveTreshold_lower = 5 #pixels
+moveTreshold_upper = 30
+radiusTreshold = 5 #pixels; move ignored if radius changes for more than this (to prevent flickering)
+flickerFramesTreshold = 5 #number of frames in which the big increase in radius or move is ignored
 screenBorder = 40 #pixels
 
 # get screen size
@@ -33,12 +41,19 @@ YscaleFactor = float(screenH) / float(frameH)
 started = False
 prevCenter = None
 prevRadius = -1
+curRadiusFlickers = 0
+curMoveXFlickers = 0
+curMoveYFlickers = 0
 def processMove(center, radius):
     if not started: 
         return
+
     global prevCenter
     global prevRadius
-    #print("prev: {}, cur: {}".format(prevCenter, center))
+    global curRadiusFlickers
+    global curMoveXFlickers
+    global curMoveYFlickers
+
     if center is None:
         prevCenter = None
         prevRadius = -1
@@ -48,20 +63,45 @@ def processMove(center, radius):
     else:
         diffX = float(center[0]) - float(prevCenter[0])
         diffY = float(center[1]) - float(prevCenter[1])
-        #print("diff: {}, {} ".format(diffX, diffY))
-        if abs(diffX) < moveTreshold:
+
+        if abs(diffX) < moveTreshold_lower:
             diffX = 0
-        if abs(diffY) < moveTreshold:
+            curMoveXFlickers = 0
+        elif abs(diffX) > moveTreshold_upper and curMoveXFlickers < flickerFramesTreshold:
+            diffX = 0
+            curMoveXFlickers += 1
+        elif curMoveXFlickers == flickerFramesTreshold:
+            curMoveXFlickers = 0
+
+        if abs(diffY) < moveTreshold_lower:
             diffY = 0
-        
+            curMoveYFlickers = 0
+        elif abs(diffY) > moveTreshold_upper and curMoveYFlickers < flickerFramesTreshold:
+            diffY = 0
+            curMoveYFlickers += 1
+        elif curMoveYFlickers == flickerFramesTreshold:
+            curMoveYFlickers = 0
+
         diffX *= XscaleFactor * -1 # multiply by -1 to change direction because of mirroring
         diffY *= YscaleFactor
 
-        if diffX != 0 or diffY != 0:
+        diffR = radius - prevRadius
+        
+        radiusCorrect = True
+        if abs(diffR) > radiusTreshold and curRadiusFlickers < flickerFramesTreshold:
+            radiusCorrect = False
+            curRadiusFlickers += 1
+        elif abs(diffR) > radiusTreshold and curRadiusFlickers == flickerFramesTreshold:
+            radiusCorrect = True
+            curRadiusFlickers = 0
+
+        if radiusCorrect and (diffX != 0 or diffY != 0):
             cmd = 'xte "mousermove {} {}"'.format(int(diffX), int(diffY))
             os.system(cmd)
             prevCenter = center
             prevRadius = radius
+
+
 
 
 vs = VideoStream(src=0).start()
