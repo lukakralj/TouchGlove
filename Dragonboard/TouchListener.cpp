@@ -41,12 +41,13 @@ int candidates[] = { -1, -1 };
 int lastRead[] = { -1, -1 };
 
 string serverUrl = "";
+int lastEncoding = -1;
 int main(int argc, char** argv) {
 	if (argc < 2) {
 		cout << "Missing URL parameter." << endl;
-		exit(1);
+		onStop(-1);
 	}
-	serverUrl = *argv[1];
+	serverUrl = argv[1];
 	signal(SIGTERM, onStop);
 	signal(SIGINT, onStop);
 
@@ -84,6 +85,7 @@ int main(int argc, char** argv) {
 				}
 			}
 		}
+		cout << lastRead[0] << "  " << lastRead[1] << endl;
 
 		triggerAction(encodeAction(curAction, numOfSensors));
 
@@ -163,8 +165,11 @@ void testEncodeAction() {
 }
 
 void triggerAction(const int encoding) {
-	cout << "Triggered: " << encoding << endl;
-	// TODO: send request
-	string command = "curl " + serverUrl + "/sens/" + to_string(encoding);
+	if (lastEncoding == encoding) {
+		// Triggers did not change, no need to send the request again
+		return;
+	}
+	lastEncoding = encoding;
+	string command = "curl -s '" + serverUrl + "/sens/" + to_string(encoding) + "' > /dev/null &";
 	system(command.c_str());
 }

@@ -227,7 +227,7 @@ string exec(string cmd) {
 	}
 	else {
 		// Remove final line break \n if there is any.
-		if (result.at(result.size() - 1) == '\n') {
+		if (result.size() > 0 && result.at(result.size() - 1) == '\n') {
 			result = result.substr(0, result.size() - 1);
 		}
 	}
