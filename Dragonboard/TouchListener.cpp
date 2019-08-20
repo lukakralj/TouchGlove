@@ -22,23 +22,25 @@ void onStop(int sig);
 void testEncodeAction();
 
 // Initialise all the sensors
-int numOfSensors = 2;
+int numOfSensors = 3;
 Gpio sensors[] = {
 	Gpio(26,"in"), 
-	Gpio(29, "in") };
+	Gpio(29, "in"),
+	Gpio(33, "in") 
+};
 
 // Specifies the state of sensors in which all the triggers are considered to be off.
 // Must be in binary.
-unsigned int configurationMask = 0b00;
+unsigned int configurationMask = 0b000;
 
 // Set up all the control variables
 auto now = high_resolution_clock::now();
 time_point<std::chrono::_V2::system_clock, std::chrono::nanoseconds> changeTimers[] = {
-	now, now
+	now, now, now
 };
-int curAction[] = { -1, -1 };
-int candidates[] = { -1, -1 };
-int lastRead[] = { -1, -1 };
+int curAction[] = { -1, -1, -1 };
+int candidates[] = { -1, -1, -1 };
+int lastRead[] = { -1, -1, -1 };
 
 string serverUrl = "";
 int lastEncoding = -1;

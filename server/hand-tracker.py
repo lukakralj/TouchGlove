@@ -5,24 +5,18 @@ import imutils
 import time
 import subprocess
 import os
+import sys
 
-#lower = np.array([110, 100, 100]) blue (often confused with black)
-#upper = np.array([130, 255, 255]) blue
-#lower = np.array([50, 100, 100]) #green (as in green-screen, did not match anything unless a very fake green (which is good))
-#upper = np.array([70, 255, 255])
-lower = np.array([75, 100, 100]) #more natural green
+lower = np.array([75, 100, 100]) #green
 upper = np.array([95, 255, 255])
-#lower = np.array([160, 100, 100]) #red (sometimes it interacts with some parts of skin)
-#upper = np.array([180, 255, 255])
-
 
 frameW = 600
 frameH = -1 # calculated below
-moveTreshold_lower = 5 #pixels
-moveTreshold_upper = 30
+moveTreshold_lower = 1 #pixels
+moveTreshold_upper = 400
 radiusTreshold = 5 #pixels; move ignored if radius changes for more than this (to prevent flickering)
 flickerFramesTreshold = 5 #number of frames in which the big increase in radius or move is ignored
-screenBorder = 40 #pixels
+screenBorder = 40 #pixels; the area of the image that represents the screen
 
 # get screen size
 cmd = ['xrandr']
@@ -53,8 +47,6 @@ def processMove(center, radius):
 
     global prevCenter
     global prevRadius
-    global curMoveXFlickers
-    global curMoveYFlickers
 
     if center is None:
         prevCenter = None
@@ -77,6 +69,9 @@ def processMove(center, radius):
 # return float
 def calculateDiff(center, ind):
     global curMoveFlickers
+
+    mouseSpeed = os.getenv('MOUSE_SPEED', 3)
+
     diff = float(center[ind]) - float(prevCenter[ind])
     if abs(diff) < moveTreshold_lower:
         diff = 0
@@ -87,13 +82,14 @@ def calculateDiff(center, ind):
     elif curMoveFlickers[ind] == flickerFramesTreshold:
         curMoveFlickers[ind] = 0
 
-    diff *= scaleFactors[ind]
+    diff *= scaleFactors[ind] * float(mouseSpeed)/2
     return diff
 
 # check if the radius is correct
 # return True/False
 def isRadiusCorrect(radius):
     global curRadiusFlickers
+
     diffR = radius - prevRadius
     radiusCorrect = True
     if abs(diffR) > radiusTreshold and curRadiusFlickers < flickerFramesTreshold:

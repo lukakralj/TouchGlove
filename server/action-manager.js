@@ -12,13 +12,20 @@ module.exports = {
 
 const exec = require('child_process').exec;
 
-let mouseSpeeds = [1,3,6,10];
-let curSpeedInd = 1; // speed 3
+let mouseSpeeds = [1,2,3,6,10];
+let curSpeedInd = 2; // speed 3
+
+/** Sets the speed that the python script can then use. */
+process.env.MOUSE_SPEED = mouseSpeeds[curSpeedInd];
+
 //let isMouseDown = false;
 let isWindowSwitcherOn = false;
-const indexF_mask = 0b001;
+const indexF_mask = 0b100;
 const middleF_mask = 0b010;
-const ringF_mask = 0b100;
+const ringF_mask = 0b001;
+
+console.log("Starting hand tracker...");
+runCmd("python hand-tracker.py");
 
 /**
  * 
@@ -160,10 +167,10 @@ function toNextWindow() {
 
 /**
  * Change the speed of the mouse.
- * TODO: this needs to work together with python movement detection script
  */
 function changeMouseSpeed() {
     curSpeedInd = (curSpeedInd + 1) % mouseSpeeds.length;
+    process.env.MOUSE_SPEED = mouseSpeeds[curSpeedInd];
 }
 
 /**
