@@ -26,7 +26,7 @@ int numOfSensors = 3;
 Gpio sensors[] = {
 	Gpio(26,"in"), 
 	Gpio(29, "in"),
-	Gpio(33, "in") 
+	Gpio(34, "in") 
 };
 
 // Specifies the state of sensors in which all the triggers are considered to be off.
