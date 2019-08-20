@@ -13,10 +13,10 @@ upper = np.array([95, 255, 255])
 
 frameW = 600
 frameH = -1 # calculated below
-moveTreshold_lower = 1 #pixels
-moveTreshold_upper = 400
-radiusTreshold = 5 #pixels; move ignored if radius changes for more than this (to prevent flickering)
-flickerFramesTreshold = 5 #number of frames in which the big increase in radius or move is ignored
+moveThreshold_lower = 1 #pixels
+moveThreshold_upper = 400
+radiusThreshold = 5 #pixels; move ignored if radius changes for more than this (to prevent flickering)
+flickerFramesThreshold = 5 #number of frames in which the big increase in radius or move is ignored
 screenBorder = 40 #pixels; the area of the image that represents the screen
 
 # get screen size
@@ -79,13 +79,13 @@ def calculateDiff(center, ind):
         prevMouseSpeed = mouseSpeed
 
     diff = float(center[ind]) - float(prevCenter[ind])
-    if abs(diff) < moveTreshold_lower:
+    if abs(diff) < moveThreshold_lower:
         diff = 0
         curMoveFlickers[ind] = 0
-    elif abs(diff) > moveTreshold_upper and curMoveFlickers[ind] < flickerFramesTreshold:
+    elif abs(diff) > moveThreshold_upper and curMoveFlickers[ind] < flickerFramesThreshold:
         diff = 0
         curMoveFlickers[ind] += 1
-    elif curMoveFlickers[ind] == flickerFramesTreshold:
+    elif curMoveFlickers[ind] == flickerFramesThreshold:
         curMoveFlickers[ind] = 0
 
     diff *= scaleFactors[ind] * float(mouseSpeed)/2
@@ -98,10 +98,10 @@ def isRadiusCorrect(radius):
 
     diffR = radius - prevRadius
     radiusCorrect = True
-    if abs(diffR) > radiusTreshold and curRadiusFlickers < flickerFramesTreshold:
+    if abs(diffR) > radiusThreshold and curRadiusFlickers < flickerFramesThreshold:
         radiusCorrect = False
         curRadiusFlickers += 1
-    elif abs(diffR) > radiusTreshold and curRadiusFlickers == flickerFramesTreshold:
+    elif abs(diffR) > radiusThreshold and curRadiusFlickers == flickerFramesThreshold:
         radiusCorrect = True
         curRadiusFlickers = 0
     return radiusCorrect
