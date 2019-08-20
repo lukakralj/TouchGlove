@@ -87,7 +87,6 @@ int main(int argc, char** argv) {
 				}
 			}
 		}
-		cout << lastRead[0] << "  " << lastRead[1] << endl;
 
 		triggerAction(encodeAction(curAction, numOfSensors));
 
