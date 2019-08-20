@@ -166,5 +166,6 @@ void triggerAction(const int encoding) {
 		return;
 	}
 	lastEncoding = encoding;
-	// TODO: send encoding
+	string cmd = "echo " + to_string(encoding) + " > /dev/ttyGS0";
+	system(cmd.c_str());
 }
