@@ -42,8 +42,6 @@ process.on('SIGTERM', () => {
  * @param {number} actionId Number representation of the triggers.
  */
 function dispatchAction(actionId) {
-    console.log("received: " + actionId);
-
     // TODO: probably needs some refactoring
     if ((actionId & indexF_mask) != 0) {
         startIndexF();
@@ -115,7 +113,6 @@ function endMiddleF() {
     if (!middleF_waitForEnd) {
         return;
     }
-    toggleWindowSwitcher();
     middleF_waitForEnd = false;
 }
 
@@ -149,30 +146,21 @@ function endRingF() {
  * Turn on/off scrolling through the active windows.
  */
 function toggleWindowSwitcher() {
-    if (isWindowSwitcherOn) {
-        isWindowSwitcherOn = false;
-        runCmd("xte 'keydown Alt_L'");
-    }
-    else {
-        isWindowSwitcherOn = true;
-        runCmd("xte 'keyup Alt_L'");
-    }
+    isWindowSwitcherOn = !isWindowSwitcherOn;
 }
 
 /**
  * Move to the active window above the currently selected one.
  */
 function toPrevWindow() {
-    runCmd("xte 'key Tab'");
+    runCmd("xte 'keydown Alt_L' 'key Tab' 'keyup Alt_L'");
 }
 
 /**
  * Move to the active window below the currently selected one.
  */
 function toNextWindow() {
-    runCmd("xte 'keydown Shift_L'");
-    runCmd("xte 'key Tab'");
-    runCmd("xte 'keyup Shift_L'");
+    runCmd("xte 'keydown Alt_L' 'keydown Shift_L' 'key Tab' 'keyup Shift_L' 'keyup Alt_L'");
 }
 
 /**
@@ -209,7 +197,7 @@ function runCmd(cmd) {
     exec(cmd, (err, stdout, stderr) => {
         if (err || stderr) {
             console.log("======Error with command '" + cmd + "' ======");
-            console.log(err);
+            //console.log(err);
             console.log(stderr);
             console.log("=====end output: '" + cmd + "' ========");
         }

@@ -6,6 +6,7 @@ import time
 import subprocess
 import os
 import sys
+import signal
 
 lower = np.array([75, 100, 100]) #green
 upper = np.array([95, 255, 255])
@@ -64,13 +65,18 @@ def processMove(center, radius):
             prevCenter = center
             prevRadius = radius
 
+prevMouseSpeed = -1 #just for testing
+
 # calculate the diff of the coordinate
 # ind = 0 for X, ind = 1 for Y
 # return float
 def calculateDiff(center, ind):
     global curMoveFlickers
-
+    global prevMouseSpeed
     mouseSpeed = os.getenv('MOUSE_SPEED', 3)
+    if mouseSpeed != prevMouseSpeed:
+        print("mouse speed changed from {} to {}.".format(prevMouseSpeed, mouseSpeed))
+        prevMouseSpeed = mouseSpeed
 
     diff = float(center[ind]) - float(prevCenter[ind])
     if abs(diff) < moveTreshold_lower:
@@ -117,6 +123,14 @@ def resetMovement():
 
 vs = VideoStream(src=0).start()
 time.sleep(2.0)
+
+def onExit(signum, frame):
+    vs.stop()
+    cv2.destroyAllWindows()
+    sys.exit(0)
+    
+signal.signal(signal.SIGINT, onExit)
+signal.signal(signal.SIGTERM, onExit)
 
 while True:
     frame = vs.read()
@@ -168,5 +182,4 @@ while True:
     if key == ord("q"):
         break
 
-vs.stop()
-cv2.destroyAllWindows()
+onExit(2, None)
