@@ -7,26 +7,11 @@
  * @version 1.0
  */
 
-const ngrok = require('ngrok');
-const ngrokOpts = {
-    "proto": "http",
-    "addr": 5637
-}
-
-console.log("Connecting ngrok...");
-let ngrokUrl = undefined;
-(async function () {
-    ngrokUrl = await ngrok.connect(ngrokOpts);
-    console.log("Ngrok connected: " + ngrokUrl);
-    console.log("Ngrok using port: " + ngrokOpts.addr);
-})().catch((err) => {
-    console.log(err);
-    console.log("Ngrok could not start.");
-});
+const port = 5637;
 
 const actionManager = require('./action-manager');
 const app = require('express')();
-app.listen(ngrokOpts.addr, () => {
+app.listen(port, () => {
     console.log("Server waiting...");
 });
 
