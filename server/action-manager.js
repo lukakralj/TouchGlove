@@ -1,5 +1,5 @@
 /**
- * This module assigns actions to specific action IDs.
+ * TODO:
  * 
  * @module 
  * @author Luka Kralj
@@ -18,7 +18,7 @@ let curSpeedInd = 2; // speed 3
 /** Sets the speed that the python script can then use. */
 process.env.MOUSE_SPEED = mouseSpeeds[curSpeedInd];
 
-//let isMouseDown = false;
+let isMouseDown = false;
 let isWindowSwitcherOn = false;
 const indexF_mask = 0b100;
 const middleF_mask = 0b010;
@@ -26,6 +26,16 @@ const ringF_mask = 0b001;
 
 console.log("Starting hand tracker...");
 runCmd("python hand-tracker.py");
+
+/** Block Ctrl+C plus graceful shutdown. */
+process.on('SIGINT', () => {
+    onExit();
+});
+
+/** Graceful shutdown. */
+process.on('SIGTERM', () => {
+    onExit();
+});
 
 /**
  * 
@@ -177,7 +187,7 @@ function changeMouseSpeed() {
  * Left mouse button is pressed.
  */
 function mouseDown() {
-    //isMouseDown = true;
+    isMouseDown = true;
     runCmd("xte 'mousedown 1'");
 }
 
@@ -185,7 +195,7 @@ function mouseDown() {
  * Left mouse button is released.
  */
 function mouseUp() {
-    //isMouseDown = false;
+    isMouseDown = false;
     runCmd("xte 'mouseup 1'");
 }
 
@@ -206,5 +216,29 @@ function runCmd(cmd) {
         if (stdout) {
             console.log("Stdout for command: '" + cmd + "': " + stdout);
         }
+    });
+}
+
+async function onExit() {
+    console.log("Exiting...");
+    if (isWindowSwitcherOn) {
+        toggleWindowSwitcher();
+    }
+    if (isMouseDown) {
+        mouseUp();
+    }
+    await sleep(1000);
+    process.exit(0);
+}
+
+/**
+ * Await for this function to pause execution for a certain time.
+ *
+ * @param {number} ms Time in milliseconds
+ * @returns {Promise}
+ */
+function sleep(ms) {
+    return new Promise(resolve => {
+        setTimeout(resolve, ms);
     });
 }
