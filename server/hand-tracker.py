@@ -7,10 +7,13 @@ import subprocess
 import os
 import sys
 import signal
+import threading
 
+# Tracker target colour range
 lower = np.array([75, 100, 100]) #green
 upper = np.array([95, 255, 255])
 
+displayTracker = False 
 frameW = 600
 frameH = -1 # calculated below
 moveThreshold_lower = 1 #pixels
@@ -18,6 +21,8 @@ moveThreshold_upper = 400
 radiusThreshold = 5 #pixels; move ignored if radius changes for more than this (to prevent flickering)
 flickerFramesThreshold = 5 #number of frames in which the big increase in radius or move is ignored
 screenBorder = 40 #pixels; the area of the image that represents the screen
+
+mouseSpeed = 3 # default value
 
 # get screen size
 cmd = ['xrandr']
@@ -65,18 +70,11 @@ def processMove(center, radius):
             prevCenter = center
             prevRadius = radius
 
-prevMouseSpeed = -1 #just for testing
-
 # calculate the diff of the coordinate
 # ind = 0 for X, ind = 1 for Y
 # return float
 def calculateDiff(center, ind):
     global curMoveFlickers
-    global prevMouseSpeed
-    mouseSpeed = os.getenv('MOUSE_SPEED', 3)
-    if mouseSpeed != prevMouseSpeed:
-        print("mouse speed changed from {} to {}.".format(prevMouseSpeed, mouseSpeed))
-        prevMouseSpeed = mouseSpeed
 
     diff = float(center[ind]) - float(prevCenter[ind])
     if abs(diff) < moveThreshold_lower:
@@ -121,12 +119,27 @@ def resetMovement():
     curRadiusFlickers = 0
     curMoveFlickers = [0, 0]
 
+#====Thread that is listening for speed change
+stopStdinThread = False
+def processStdin():
+    global mouseSpeed
+    while not stopStdinThread:
+        line = sys.stdin.readline().strip()
+        if line.isdigit():
+            mouseSpeed = int(line)
+
+stdinThread = threading.Thread(target=processStdin)
+stdinThread.start()
+
 vs = VideoStream(src=0).start()
 time.sleep(2.0)
 
 def onExit(signum, frame):
+    global stopStdinThread
+    stopStdinThread = True
     vs.stop()
     cv2.destroyAllWindows()
+    stdinThread.join() # Need to press Enter to exit.
     sys.exit(0)
     
 signal.signal(signal.SIGINT, onExit)
@@ -176,7 +189,10 @@ while True:
     else:
         resetMovement()
 
-    cv2.imshow("Frame", frame)
+    text = "mouse speed: {}".format(mouseSpeed)
+    cv2.putText(frame, text, (10, frameH - (40)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+    if displayTracker:
+        cv2.imshow("Frame", frame)
     key = cv2.waitKey(1) & 0xFF
 
     if key == ord("q"):

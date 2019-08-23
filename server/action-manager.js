@@ -7,17 +7,17 @@
  */
 
 module.exports = {
-    dispatchAction,
+    dispatchAction
 }
 
 const exec = require('child_process').exec;
 
+const username = "lukakralj"; // needed for notification
+
 let mouseSpeeds = [1,2,3,6,10];
 let curSpeedInd = 2; // speed 3
 
-/** Sets the speed that the python script can then use. */
-process.env.MOUSE_SPEED = mouseSpeeds[curSpeedInd];
-
+// Control variables
 let isMouseDown = false;
 let isWindowSwitcherOn = false;
 const indexF_mask = 0b100;
@@ -25,7 +25,7 @@ const middleF_mask = 0b010;
 const ringF_mask = 0b001;
 
 console.log("Starting hand tracker...");
-runCmd("python hand-tracker.py");
+const trackerProcess = runCmd("python hand-tracker.py");
 
 /** Block Ctrl+C plus graceful shutdown. */
 process.on('SIGINT', () => {
@@ -168,7 +168,9 @@ function toNextWindow() {
  */
 function changeMouseSpeed() {
     curSpeedInd = (curSpeedInd + 1) % mouseSpeeds.length;
-    process.env.MOUSE_SPEED = mouseSpeeds[curSpeedInd];
+    trackerProcess.stdin.write(mouseSpeeds[curSpeedInd].toString() + " \n")
+    // notify the user that the mouse speed changed
+    runCmd("su " + username + " -c \"notify-send 'MOUSE SPEED CHANGED TO: " + mouseSpeeds[curSpeedInd] + "' -t 1000\"");
 }
 
 /**
@@ -192,9 +194,10 @@ function mouseUp() {
  * to stdout of this script.
  * 
  * @param {string} cmd Command we want to run.
+ * @returns {child-process} The process created when running the command.
  */
 function runCmd(cmd) {
-    exec(cmd, (err, stdout, stderr) => {
+    return exec(cmd, (err, stdout, stderr) => {
         if (err || stderr) {
             console.log("======Error with command '" + cmd + "' ======");
             //console.log(err);
@@ -208,7 +211,7 @@ function runCmd(cmd) {
 }
 
 async function onExit() {
-    console.log("Exiting...");
+    console.log("Resetting mouse and keys...");
     if (isWindowSwitcherOn) {
         toggleWindowSwitcher();
     }
@@ -216,6 +219,9 @@ async function onExit() {
         mouseUp();
     }
     await sleep(1000);
+    console.log("Ending tracker process...");
+    trackerProcess.stdin.write(" \n");
+    console.log("Exiting... Press Ctrl+C again.");
     process.exit(0);
 }
 

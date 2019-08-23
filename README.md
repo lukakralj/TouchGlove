@@ -48,7 +48,8 @@ On your laptop you will need the following programs:
 - NodeJs
 - npm
 - Python
-- xte (part of [xautomation](https://linux.die.net/man/7/xautomation))
+- xte (part of [xautomation](https://linux.die.net/man/7/xautomation); on Debian install with `sudo apt-get install xautomation`)
+- notify-send (on Debian install with `sudo apt-get install libnotify-bin`)
 - All the files in the [`server/` folder](./server) of this repository
 
 On your DB you will need the following programs:
@@ -119,6 +120,8 @@ The hand motion tracker is more easily configurable. Navigate to `hand-tracker.p
 the top of the file:
 - `lower` and `upper`: These two values specify the color range for your motion tracker target. The values need to be in 
 HSV format.
+- `displayTracker`: Set to True if you want to see the video display of the tracker (Useful when debugging or setting the
+colour range).
 - `frameW`: In pixels. This specifies the size of the frame on which all the calculations will be made. Note that if this
 number is to large it may impact the performance.
 - `frameH`: You do not need to set this manually as it will be calculated at the start of the program to correspond to your
@@ -144,7 +147,7 @@ I suggest connecting to the DB through an SSH.
 The files are now ready to run, however, we also need to switch the DB into a "slave" mode to work with the USB cable.
 Note: after this step the keyboard and mouse might stop working (see [this response][0]).
 
-4. In terminal execute `modprobe g_serial`.
+4. In terminal execute `sudo modprobe g_serial`.
 
 ## Running the application
 ### Laptop
