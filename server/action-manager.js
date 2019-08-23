@@ -147,6 +147,8 @@ function endRingF() {
  */
 function toggleWindowSwitcher() {
     isWindowSwitcherOn = !isWindowSwitcherOn;
+    // notify the user that the window switcher changed
+    runCmd("su " + username + " -c \"notify-send 'WINDOW SWITCHING MODE: " + (isWindowSwitcherOn ? "ON" : "OFF") + "' -t 1000\"");
 }
 
 /**
