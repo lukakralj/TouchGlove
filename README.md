@@ -1,12 +1,12 @@
 # TouchGlove
 
-This repository contains software that is needed for a homemade prototype dataglove to run.
+This repository contains software and instructions for creating a homemade dataglove.
 
 ## Aim
 The aim was to create a gesture input device to use for a laptop. One of the main goals was to be able to grab a window/pen
 with two fingers and then moving it around.
 The hardware was very cheap as it only required a couple of wires, a winter glove and a Dragonboard 410c (DB) - yes, the DB is
-a bit more expensive but any other controller like Raspberry Pi or Arduino could also do the job.
+a bit more expensive but any other controller like Raspberry Pi or Arduino can also do the job.
 
 ## Functionality
 The functionality covers:
@@ -25,12 +25,12 @@ release the mouse button. If you do this quickly it will simulate a mouse click.
 You can also move your hand while holding something and thus drag it around the screen.
 
 **Changing mouse speed**:
-To change the mouse speed touch your ring finger with your thumb. Touch more times to circulate between different speeds.
+To change the mouse speed touch your ring finger and your thumb. Touch multiple times to scroll through all the speeds.
 
 **Switching between the windows**:
-To enable the window switching mode, touch your middle finger with your thumb. Now you can touch your index finger to go to
-the previously active window. Or you can touch your ring finger to circulate through all the open windows.
-To toggle the window switching mode off, touch your middle finger with your thumb again.
+To enable the window switching mode, touch your middle finger and your thumb. Now you can touch your index finger to go to
+the last active window. Or you can touch your ring finger to circulate through all the open windows.
+To toggle the window switching mode off, touch your middle finger and your thumb again.
 
 ## Components list
 The whole setup contains the following components:
@@ -38,10 +38,10 @@ The whole setup contains the following components:
 - a webcam (I am using my laptop's built-in camera)
 - a Dragonboard 410c running Debian
 - a power adapter for Dragonboard 410c 
-- a micro USB cable
-- a glove (I used a woolen winter glove that has been living in our house for several years without owner)
+- a micro USB cable (that can transmit data)
+- a glove (I used a woolen winter glove that has been living in our house for several years without an owner)
 - wires
-- motion tracker target (I used the top of a bottle cap that had a very contrasting green colour)
+- motion tracker target (I used the top of a plastic bottle cap that had a very contrasting green colour)
 
 ## Software
 On your laptop you will need the following programs:
@@ -50,7 +50,7 @@ On your laptop you will need the following programs:
 - Python
 - xte (part of [xautomation](https://linux.die.net/man/7/xautomation); on Debian install with `sudo apt-get install xautomation`)
 - notify-send (on Debian install with `sudo apt-get install libnotify-bin`)
-- All the files in the [`server/` folder](./server) of this repository
+- All the files in the [`laptopApp/` folder](./laptopApp) of this repository
 
 On your DB you will need the following programs:
 - g++ compiler
@@ -58,23 +58,23 @@ On your DB you will need the following programs:
 
 ## Hardware setup
 ### Glove sensors
-First, we need some to be able to get the input from our fingers to the DB. For this I decided to create the very basic electric
-switch which is "embedded" in the glove. 
+First, we need something to be able to get the input from our fingers to the DB. For this I decided to create the very basic electric
+switch which is sewn into the glove. 
 There are four fingers that are involved in the actions. Index finger, middle finger and ring finger are the fingers that
 actually have actions associated with them. Thumb is the one that can trigger any of the sensors on the other fingers. Therefore,
-if the index finger and the middle finger accidentally touch, not action is triggered.
-For create the sensors, I simply sew some wire into the woolen glove (see images). I used the same pattern on all three action
-fingers, however the pattern on the thumb is rotated for 90 degrees so that the sensors get triggered more easily.
+if the index finger and the middle finger accidentally touch, no action is triggered.
+To create the sensors, I simply sew some wire into the woolen glove (see images). I used the same pattern on all three action
+fingers. However, the pattern on the thumb is rotated for 90 degrees so that the sensors get triggered more easily.
 
 **Note:** This part can be completed in countless different ways. I just went with this solution as it was good enough for a
 prototype as well as being very cheap (aka free :) ).
 
 ### Motion tracker target
 The program that runs on the laptop is tracking an object that is of a contrasting colour compared to the background. For this
-I used a top of a bright green bottle cap, that I attached to the front of the glove (see images).
+I used a top of a bright green plastic bottle cap, that I attached to the front of the glove (see images).
 When testing different colours and objects I realised that a small solid object with a strong colour is very suitable
 for the job. Should you use an object that can bend easily you might notice that flickering can increase due to the shadows
-which will cause the mouse to jump around the screen.
+which could cause the mouse to jump around the screen.
 
 ### Connect glove and Dragonboard
 Once the sensors are completed, we need to connect them to the GPIO pins on the DB. I connected them with longer wires
@@ -88,7 +88,7 @@ Now connect the power supply to the DB and use micro USB cable to connect your l
 
 ## Configuration
 The hardware is now ready, but before we start the programs we still need to configure them. Changing some of these
-parameters can influence the performance, movement smoothness, etc. so feel free to try different values. However, there are
+parameters can influence the performance, movement smoothness, etc., so feel free to try different values. However, there are
 some parameters that need to be set correctly to allow the program to even run at all.
 
 ### Laptop application configuration
@@ -118,12 +118,12 @@ Navigate to `TouchListener.cpp`. Configurable variables are on the top of the fi
 glove and Dragonboard"***. The first Gpio object needs to correspond to the wire from the index finger; the second Gpio
 object needs to correspond to the wire from the middle finger; and the third Gpio object needs to correspond to the
 ring finger. All the sensors need to be configured as an "input" pin. 
-**Note**: You do not need to configure the pin for the thumb wire!!!
+**Note**: You do not need to configure the pin for the thumb wire!
 - `configurationMask`: An integer, for readability written in binary. This mask represents the state of the sensors in which
 all the sensors are considered to be "off". Example: if the mask is set to 0b01, this means that the first sensors is triggered
 when it is touched; however the second sensor is triggered when it is released (we need to hold it for the sensor to be "off").
-- all other control variables need to be initialised with the default values, however they need to be of the same length as
-the sensors array (this is checked with assertions).
+- all other control variables need to be initialised with the default values, however they need to be of the **same length as
+the sensors array** (this is checked with assertions).
 
 **Important**: the configuration mask bits correspond to the sensors from left to right. This is the leftmost bit corresponds to the
 first sensor in the array and the rightmost bit corresponds to the last sensor in the array.
@@ -135,26 +135,27 @@ long as all other control variables are initialised correctly.
 ## Software setup
 ### Laptop
 1. Open terminal on your laptop.
-2. Navigate to the `server/` folder that you copied from this repository, for example: `cd ~/Documents/server/`.
+2. Navigate to the `laptopApp/` folder that you copied from this repository, for example: `cd ~/Documents/laptopApp/`.
 3. Run `npm i` to install the NodeJs modules.
 
 ### Dragonboard
 I suggest connecting to the DB through an SSH.
 1. Open terminal on the DB.
 2. Navigate to the `Dragonboard/` folder that you copied from this repository, for example: `cd ~/Documents/Dragonboard/`.
-3. Compile the files by executing `make`.
+3. Compile the files by executing `make` (If make command doesn't work, install it or just copy the second line 
+of the `Makefile` and run it).
 
-The files are now ready to run, however, we also need to switch the DB into a "slave" mode to work with the USB cable.
+The files are now ready to run. However, we also need to switch the DB into a "slave" mode to work with the USB cable.
 Note: after this step the keyboard and mouse might stop working (see [this response][0]).
 
-4. In terminal execute `sudo modprobe g_serial`.
+4. In terminal, execute `sudo modprobe g_serial`.
 
 ## Running the application
 ### Laptop
 1. Open terminal on your laptop.
-2. Navigate to the `server/` folder that you copied from this repository, for example: `cd ~/Documents/server/`.
+2. Navigate to the `laptopApp/` folder that you copied from this repository, for example: `cd ~/Documents/laptopApp/`.
 3. Run `npm start`.
-4. Provide your sudo password if prompted. The application needs to run as root because of communication via the USB.
+4. Provide password, if prompted. The application needs to run as root because of communication via the USB.
 5. The application might take a few seconds to finish setting up and starting the webcam.
 
 ### Dragonboard
@@ -162,13 +163,14 @@ I suggest connecting to the DB through an SSH.
 1. Open terminal on the DB.
 2. Navigate to the `Dragonboard/` folder that you copied from this repository, for example: `cd ~/Documents/Dragonboard/`.
 3. Run `sudo ./TouchListener`.
-4. Provide your sudo password if prompted. The application needs to run as root to be able to communicate with GPIOs.
+4. Provide password, if prompted. The application needs to run as root to be able to communicate with GPIOs and to transmit
+data via the USB.
 5. The setup is completed in less than a second.
 
-Now, try using the glove you created and moving it around! Have fun!
+*Now, try using the glove you created and moving it around! Have fun!*
 
 ## Feedback
-Whether you liked the project or not, I will be thankful for any feedback, suggestions, comments on the project.
+Whether you liked the project or not, I will be very thankful for any feedback, suggestions, comments on the project.
 
 *Feel free to [email][1] me!*
 
