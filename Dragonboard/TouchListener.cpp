@@ -1,3 +1,12 @@
+/**
+ * This script is listening to the sensors on the glove.
+ * When they are triggered the combination is encoded and the
+ * send via the USB cable to the laptop.
+ * 
+ * @author Luka Kralj
+ * @version 1.0
+ */
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -18,22 +27,25 @@ int threshold_ms = 25;
 
 unsigned int encodeAction(const int[], int);
 void triggerAction(const int);
-void onStop(int sig);
+void onExit(int sig);
 void testEncodeAction();
 
 // Initialise all the sensors
 int numOfSensors = 3;
 Gpio sensors[] = {
-	Gpio(26,"in"), 
-	Gpio(29, "in"),
-	Gpio(34, "in") 
+	Gpio(26,"in"),  // Index finger sensor.
+	Gpio(29, "in"), // Middle finger sensor.
+	Gpio(34, "in")  // Ring finger sensor.
 };
 
-// Specifies the state of sensors in which all the triggers are considered to be off.
-// Must be in binary.
+/** 
+ * Specifies the state of sensors in which all the triggers are considered to be off.
+ * Must be in binary.
+ * (This enables to implement a sensor that is triggered only when it is released.)
+ */
 unsigned int configurationMask = 0b000;
 
-// Set up all the control variables
+// Set up all the control variables.
 auto now = high_resolution_clock::now();
 time_point<std::chrono::_V2::system_clock, std::chrono::nanoseconds> changeTimers[] = {
 	now, now, now
@@ -42,11 +54,13 @@ int curAction[] = { -1, -1, -1 };
 int candidates[] = { -1, -1, -1 };
 int lastRead[] = { -1, -1, -1 };
 
-int lastEncoding = -1;
-int main(int argc, char** argv) {
-	signal(SIGTERM, onStop);
-	signal(SIGINT, onStop);
+int lastEncoding = -1; // Only send the encoding once it changes.
 
+int main(int argc, char** argv) {
+	signal(SIGTERM, onExit);
+	signal(SIGINT, onExit);
+
+	// Verify that all the control variables were set up properly.
 	assert (numOfSensors == (sizeof(sensors)/sizeof(sensors[0])));
 	assert (numOfSensors == (sizeof(changeTimers)/sizeof(changeTimers[0])));
 	assert (numOfSensors == (sizeof(curAction)/sizeof(curAction[0])));
@@ -62,15 +76,15 @@ int main(int argc, char** argv) {
 			lastRead[i] = sensors[i].readValue();
 
 			if (curAction[i] == -1) {
-				// Happens only once at the beginning
+				// Happens only once at the beginning.
 				curAction[i] = lastRead[i];
 			}
 			else {
-				// A change might have occurred - start timing the change
+				// A change might have occurred - start timing the change.
 				if (lastRead[i] != candidates[i]) {
 					candidates[i] = lastRead[i];
 					changeTimers[i] = high_resolution_clock::now();
-				}// else candidate value did not change
+				} // Else the candidate value did not change.
 			}
 
 			if (candidates[i] != curAction[i]) {
@@ -82,15 +96,18 @@ int main(int argc, char** argv) {
 			}
 		}
 
+		// Encode and trigger the action.
 		triggerAction(encodeAction(curAction, numOfSensors));
 
 		usleep(1000); // 1 ms (param in microseconds!!!)
 	}
-
 	return 0;
 }
 
-void onStop(int sig) {
+/**
+ * Called before the program exits. Takes care of cleaning up.
+ */
+void onExit(int sig) {
 	cout << "Intercepted signal: " << sig << endl;
 	for (int i = 0; i < numOfSensors; ++i) {
 		sensors[i].unexportPin();
@@ -124,6 +141,26 @@ unsigned int encodeAction(const int sensorValues[], int length) {
 	return encoded;
 }
 
+/**
+ * If the encoding changed, it is sent to to the laptop via USB.
+ * 
+ * @param encoding The sensor combination as returned by encodeAction().
+ */
+void triggerAction(const int encoding) {
+	if (lastEncoding == encoding) {
+		// Triggers did not change, no need to trigger action again
+		return;
+	}
+	lastEncoding = encoding;
+	string cmd = "echo " + to_string(encoding) + " > /dev/ttyGS0";
+	system(cmd.c_str());
+}
+
+/**
+ * Test encoding.
+ * Disable by uncommenting line :
+ * 		#define NDEBUG
+ */
 void testEncodeAction() {
 	unsigned int originalMask = configurationMask;
 
@@ -157,14 +194,4 @@ void testEncodeAction() {
 	assert (encodeAction(test6, 4) == 0b0011);
 
 	configurationMask = originalMask;
-}
-
-void triggerAction(const int encoding) {
-	if (lastEncoding == encoding) {
-		// Triggers did not change, no need to trigger action again
-		return;
-	}
-	lastEncoding = encoding;
-	string cmd = "echo " + to_string(encoding) + " > /dev/ttyGS0";
-	system(cmd.c_str());
 }

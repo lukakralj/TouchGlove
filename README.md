@@ -1,6 +1,6 @@
 # TouchGlove
 
-This repository contains software that is needed for a homemade prototype data glove to run.
+This repository contains software that is needed for a homemade prototype dataglove to run.
 
 ## Aim
 The aim was to create a gesture input device to use for a laptop. One of the main goals was to be able to grab a window/pen
@@ -91,6 +91,25 @@ The hardware is now ready, but before we start the programs we still need to con
 parameters can influence the performance, movement smoothness, etc. so feel free to try different values. However, there are
 some parameters that need to be set correctly to allow the program to even run at all.
 
+### Laptop application configuration
+The current application works with three sensors. If you decide to add/remove sensors or assign different actions
+to the sensors you will need to modify the code in `action-manager.js`.
+
+The hand motion tracker is more easily configurable. Navigate to `hand-tracker.py`. The configurable variables are on 
+the top of the file:
+- `lower` and `upper`: These two values specify the color range for your motion tracker target. The values need to be in 
+HSV format.
+- `displayTracker`: Set to True if you want to see the video display of the tracker (Useful when debugging or setting the
+colour range).
+- `frameW`: In pixels. This specifies the size of the frame on which all the calculations will be made. Note that if this
+number is to large it may impact the performance.
+- `frameH`: You do not need to set this manually as it will be calculated at the start of the program to correspond to your
+screen ratio.
+- `moveThreshold_lower` and `moveThreshold_upper`: These two values can be configured to ignore certain flickers of the tracker
+target.
+- `radiusThreshold` and `flickerFramesThreshold`: These values enable the program to ignore sudden flickers in tracker 
+target size that usually arise because of the shadows.
+
 ### Dragonboard configuration
 Navigate to `TouchListener.cpp`. Configurable variables are on the top of the file:
 - `threshold_ms`: Time in milliseconds. Tells how long the sensor needs to be pressed for before it triggers an action.
@@ -111,25 +130,6 @@ first sensor in the array and the rightmost bit corresponds to the last sensor i
 
 Note: you can use any number of sensors by simply changing how many Gpio object you create. The program will work properly as
 long as all other control variables are initialised correctly.
-
-### Laptop application configuration
-The current application works with three sensors. If you decide to add/remove sensors or assign different actions
-to the sensors you will need to modify the code in `action-manager.js`.
-
-The hand motion tracker is more easily configurable. Navigate to `hand-tracker.py`. The configurable variables are on 
-the top of the file:
-- `lower` and `upper`: These two values specify the color range for your motion tracker target. The values need to be in 
-HSV format.
-- `displayTracker`: Set to True if you want to see the video display of the tracker (Useful when debugging or setting the
-colour range).
-- `frameW`: In pixels. This specifies the size of the frame on which all the calculations will be made. Note that if this
-number is to large it may impact the performance.
-- `frameH`: You do not need to set this manually as it will be calculated at the start of the program to correspond to your
-screen ratio.
-- `moveThreshold_lower` and `moveThreshold_upper`: These two values can be configured to ignore certain flickers of the tracker
-target.
-- `radiusThreshold` and `flickerFramesThreshold`: These values enable the program to ignore sudden flickers in tracker 
-target size that usually arise because of the shadows.
 
 
 ## Software setup

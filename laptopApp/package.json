@@ -11,9 +11,6 @@
     "type": "git",
     "url": "git+https://github.com/lukakralj/TouchGlove.git"
   },
-  "keywords": [
-    "API"
-  ],
   "author": "Luka Kralj",
   "license": "MIT",
   "bugs": {

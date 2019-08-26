@@ -1,7 +1,7 @@
 /**
- * TODO:
+ * This module triggers appropriate actions according to the encoding.
  * 
- * @module 
+ * @module action-manager.js
  * @author Luka Kralj
  * @version 1.0
  */
@@ -12,12 +12,20 @@ module.exports = {
 
 const exec = require('child_process').exec;
 
-const username = "lukakralj"; // needed for notification
+/**
+ * Username of the user running the app.
+ * Since the app is running as root the notifications
+ * will not be showing on the screen. However, the root can execute
+ * the notifying as a different user so that the notifications will be showing
+ * on the actual user.
+ */
+const username = "lukakralj";
 
+// Possible mouse speeds (can be added or removed without a change in functionality.).
 let mouseSpeeds = [1,2,3,6,10];
 let curSpeedInd = 2; // speed 3
 
-// Control variables
+// Control variables.
 let isMouseDown = false;
 let isWindowSwitcherOn = false;
 const indexF_mask = 0b100;
@@ -25,7 +33,9 @@ const middleF_mask = 0b010;
 const ringF_mask = 0b001;
 
 console.log("Starting hand tracker...");
+// Initialise hand tracker and get the reference to its process.
 const trackerProcess = runCmd("python hand-tracker.py");
+console.log("Hand tracker has started.");
 
 /** Block Ctrl+C plus graceful shutdown. */
 process.on('SIGINT', () => {
@@ -38,43 +48,47 @@ process.on('SIGTERM', () => {
 });
 
 /**
+ * Triggers actions for certain fingers according to the encoding
+ * sent by the Dragonboard.
  * 
- * @param {number} actionId Number representation of the triggers.
+ * @param {number} encoding Number representation of the triggers.
  */
-function dispatchAction(actionId) {
+function dispatchAction(encoding) {
     // TODO: probably needs some refactoring
-    if ((actionId & indexF_mask) != 0) {
+    if ((encoding & indexF_mask) != 0) {
         startIndexF();
     }
     else {
         endIndexF();
     }
 
-    if ((actionId & middleF_mask) != 0) {
+    if ((encoding & middleF_mask) != 0) {
         startMiddleF();
     }
     else {
         endMiddleF();
     }
 
-    if ((actionId & ringF_mask) != 0) {
+    if ((encoding & ringF_mask) != 0) {
         startRingF();
     }
     else {
         endRingF();
     }
-
 }
 
-// Control variable for action dispatching
+// Control variable for action dispatching.
 let indexF_waitForEnd = false;
 let middleF_waitForEnd = false;
 let ringF_waitForEnd = false;
 
 //============================
 // Functions below handle what happens at the start and what at the end
-// of the touch on sensor
+// of the touch on a sensor. Aka it reacts to pressed and released actions
+// on the sensor.
 //============================
+
+/** When index finger sensor is pressed. */
 function startIndexF() {
     if (indexF_waitForEnd) {
         return;
@@ -89,6 +103,7 @@ function startIndexF() {
     indexF_waitForEnd = true;
 }
 
+/** When index finger sensor is released. */
 function endIndexF() {
     if (!indexF_waitForEnd) {
         return;
@@ -100,7 +115,7 @@ function endIndexF() {
     indexF_waitForEnd = false;
 }
 
-
+/** When middle finger sensor is pressed. */
 function startMiddleF() {
     if (middleF_waitForEnd) {
         return;
@@ -109,6 +124,7 @@ function startMiddleF() {
     middleF_waitForEnd = true;
 }
 
+/** When middle finger sensor is released. */
 function endMiddleF() {
     if (!middleF_waitForEnd) {
         return;
@@ -116,6 +132,7 @@ function endMiddleF() {
     middleF_waitForEnd = false;
 }
 
+/** When ring finger sensor is pressed. */
 function startRingF() {
     if (ringF_waitForEnd) {
         return;
@@ -130,6 +147,7 @@ function startRingF() {
     ringF_waitForEnd = true;
 }
 
+/** When ring finger sensor is released. */
 function endRingF() {
     if (!ringF_waitForEnd) {
         return;
@@ -138,8 +156,8 @@ function endRingF() {
 }
 
 //============================
-// Helper functions below actually 
-// execute mouse movements etc.
+// Below are the functions that actually execute the
+// commands to simulate mouse actions.
 //============================
 
 /**
@@ -147,19 +165,19 @@ function endRingF() {
  */
 function toggleWindowSwitcher() {
     isWindowSwitcherOn = !isWindowSwitcherOn;
-    // notify the user that the window switcher changed
+    // Notify the user that the window switching mode changed.
     runCmd("su " + username + " -c \"notify-send 'WINDOW SWITCHING MODE: " + (isWindowSwitcherOn ? "ON" : "OFF") + "' -t 1000\"");
 }
 
 /**
- * Move to the active window above the currently selected one.
+ * Move to the last active window.
  */
 function toPrevWindow() {
     runCmd("xte 'keydown Alt_L' 'key Tab' 'keyup Alt_L'");
 }
 
 /**
- * Move to the active window below the currently selected one.
+ * Move to the next window.
  */
 function toNextWindow() {
     runCmd("xte 'keydown Alt_L' 'keydown Shift_L' 'key Tab' 'keyup Shift_L' 'keyup Alt_L'");
@@ -170,6 +188,7 @@ function toNextWindow() {
  */
 function changeMouseSpeed() {
     curSpeedInd = (curSpeedInd + 1) % mouseSpeeds.length;
+    // Write to stdin of the tracker script that is listening for speed changes.
     trackerProcess.stdin.write(mouseSpeeds[curSpeedInd].toString() + " \n")
     // notify the user that the mouse speed changed
     runCmd("su " + username + " -c \"notify-send 'MOUSE SPEED CHANGED TO: " + mouseSpeeds[curSpeedInd] + "' -t 1000\"");
@@ -196,7 +215,7 @@ function mouseUp() {
  * to stdout of this script.
  * 
  * @param {string} cmd Command we want to run.
- * @returns {child-process} The process created when running the command.
+ * @returns {child-process} Reference to the process of the command.
  */
 function runCmd(cmd) {
     return exec(cmd, (err, stdout, stderr) => {
@@ -212,6 +231,9 @@ function runCmd(cmd) {
     });
 }
 
+/**
+ * Called before the program exits. Takes care of cleaning up.
+ */
 async function onExit() {
     console.log("Resetting mouse and keys...");
     if (isWindowSwitcherOn) {

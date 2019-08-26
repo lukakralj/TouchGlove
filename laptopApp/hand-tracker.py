@@ -1,3 +1,15 @@
+'''
+This is the script that is responsible for moving the mouse around.
+It is tracking the tracker target. This target needs to be of a 
+distinct colour compared to the background.
+
+This script can be run as a standalone.
+
+Author: Luka Kralj
+
+I took some bits of code from this site: https://www.pyimagesearch.com/2015/09/14/ball-tracking-with-opencv/
+'''
+
 from imutils.video import VideoStream
 import numpy as np
 import cv2
@@ -13,18 +25,20 @@ import threading
 lower = np.array([75, 100, 100]) #green
 upper = np.array([95, 255, 255])
 
+# True if you want to see the video display of the tracker, False otherwise.
 displayTracker = False 
+# Size of the frame to run the calculations on.
 frameW = 600
 frameH = -1 # calculated below
-moveThreshold_lower = 1 #pixels
+moveThreshold_lower = 1 # pixels
 moveThreshold_upper = 400
 radiusThreshold = 5 #pixels; move ignored if radius changes for more than this (to prevent flickering)
-flickerFramesThreshold = 5 #number of frames in which the big increase in radius or move is ignored
-screenBorder = 40 #pixels; the area of the image that represents the screen
+flickerFramesThreshold = 5 # number of frames in which the big increase in radius or move is ignored
+screenBorder = 40 # pixels; the area of the image that represents the screen
 
 mouseSpeed = 3 # default value
 
-# get screen size
+# Get screen size.
 cmd = ['xrandr']
 cmd2 = ['grep', '*']
 p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
@@ -38,15 +52,21 @@ screenH = int(screenH) - screenBorder
 
 frameH = int(float(frameW * screenH) / float(screenW))
 
+# Used to covert a move length from the frame to the screen.
 XscaleFactor = (float(screenW) / float(frameW)) * -1 # multiply by -1 to change direction because of mirroring
 YscaleFactor = float(screenH) / float(frameH)
 scaleFactors = (XscaleFactor, YscaleFactor)
 
+# Control variables
 started = False
 prevCenter = None
 prevRadius = -1
 curRadiusFlickers = 0
 curMoveFlickers = [0, 0]
+
+'''
+Decide if the move is to be executed.
+'''
 def processMove(center, radius):
     if not started: 
         return
@@ -66,13 +86,17 @@ def processMove(center, radius):
 
         if isRadiusCorrect(radius) and (diffX != 0 or diffY != 0):
             cmd = 'xte "mousermove {} {}"'.format(int(diffX), int(diffY))
-            os.system(cmd)
+            os.system(cmd) # execute mouse move
             prevCenter = center
             prevRadius = radius
 
-# calculate the diff of the coordinate
-# ind = 0 for X, ind = 1 for Y
-# return float
+''' 
+Calculate the difference of the coordinate compared to the previous frame.
+
+Params: Use ind = 0 for X-coordinate; and ind = 1 for Y-coordinate.
+
+Returns: float - The scaled difference (according to screen scale factors).
+'''
 def calculateDiff(center, ind):
     global curMoveFlickers
 
@@ -89,8 +113,10 @@ def calculateDiff(center, ind):
     diff *= scaleFactors[ind] * float(mouseSpeed)/2
     return diff
 
-# check if the radius is correct
-# return True/False
+''' 
+Check if the radius is correct; prevents flickers in radius.
+Returns: True if radius is correct, False if the move should be ignored.
+'''
 def isRadiusCorrect(radius):
     global curRadiusFlickers
 
@@ -104,9 +130,11 @@ def isRadiusCorrect(radius):
         curRadiusFlickers = 0
     return radiusCorrect
 
-# resets the moving control variables to default
-# if the tracker target is covered and then moved and uncovered again
-# this will enable similar effect to lifting and moving a mouse
+'''
+Resets the control variables to default.
+If the tracker target is covered and then moved and uncovered again
+this will enable similar effect to lifting and moving a mouse.
+'''
 def resetMovement():
     global started
     global prevCenter
@@ -119,8 +147,12 @@ def resetMovement():
     curRadiusFlickers = 0
     curMoveFlickers = [0, 0]
 
-#====Thread that is listening for speed change
 stopStdinThread = False
+'''
+Listen for stdin input on a separate thread.
+If an integer value is read from stdin the mouse
+speed will change. Otherwise nothing happens.
+'''
 def processStdin():
     global mouseSpeed
     while not stopStdinThread:
@@ -134,12 +166,15 @@ stdinThread.start()
 vs = VideoStream(src=0).start()
 time.sleep(2.0)
 
+'''
+Called before the program exits. Takes care of cleaning up.
+'''
 def onExit(signum, frame):
     global stopStdinThread
     stopStdinThread = True
     vs.stop()
     cv2.destroyAllWindows()
-    stdinThread.join() # Need to press Enter to exit.
+    stdinThread.join() # Need to press Enter to exit if running a script as a standalone.
     sys.exit(0)
     
 signal.signal(signal.SIGINT, onExit)
@@ -151,15 +186,14 @@ while True:
     if frame is None:
         break
 
-    # resize the frame, blur it, and convert it to the HSV
-    # color space
+    # Resize the frame, blur it, and convert it to the HSV color space.
     frame = imutils.resize(frame, width=frameW, height=frameH)
     blurred = cv2.GaussianBlur(frame, (11, 11), 0)
     hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
 
-    # construct a mask for the color "green", then perform
+    # Construct a mask for the selected colour range, then perform
     # a series of dilations and erosions to remove any small
-    # blobs left in the mask
+    # blobs left in the mask.
     mask = cv2.inRange(hsv, lower, upper)
     mask = cv2.erode(mask, None, iterations=2)
     mask = cv2.dilate(mask, None, iterations=2)
@@ -168,20 +202,19 @@ while True:
     cnts = imutils.grab_contours(cnts)
     center = None
 
-    # only proceed if at least one contour was found
+    # Only proceed if at least one contour was found.
     if len(cnts) > 0:
-        # find the largest contour in the mask, then use it to compute the minimum enclosing circle and centroid
+        # Find the largest contour in the mask, then use it to compute the minimum enclosing circle and centroid.
         c = max(cnts, key=cv2.contourArea)
         ((x, y), radius) = cv2.minEnclosingCircle(c)
         M = cv2.moments(c)
         center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
 
-        # only proceed if the radius meets a minimum size
+        # Only proceed if the radius meets a minimum size.
         if radius > 10:
             started = True
-            # draw the circle and centroid on the frame
-            cv2.circle(frame, (int(x), int(y)), int(radius),
-                       (0, 255, 255), 2)
+            # Draw the circle and centroid on the frame.
+            cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
             cv2.circle(frame, center, 5, (0, 0, 255), -1)
             processMove((x,y), radius)
         else: 
@@ -189,9 +222,9 @@ while True:
     else:
         resetMovement()
 
-    text = "mouse speed: {}".format(mouseSpeed)
-    cv2.putText(frame, text, (10, frameH - (40)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
     if displayTracker:
+        text = "mouse speed: {}".format(mouseSpeed)
+        cv2.putText(frame, text, (10, frameH - (40)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
         cv2.imshow("Frame", frame)
     key = cv2.waitKey(1) & 0xFF
 
