@@ -80,7 +80,6 @@ When testing different colours and objects I realised that a small solid object 
 for the job. Should you use an object that can bend easily you might notice that flickering can increase due to the shadows
 which could cause the mouse to jump around the screen.
 
-=======
 ![Tracker is tracking this green circle to move the mouse.](./images/small/tracker_target.jpg?raw=true "Tracker is tracking this green circle to move the mouse.")
 
 ### Connect glove and Dragonboard
