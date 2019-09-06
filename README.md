@@ -2,7 +2,7 @@
 
 This repository contains software and instructions for creating a homemade dataglove.
 
-![Clearly just the first prototype.](./images/small/setup.jpg?raw=true "Main setup")
+![Main setup](./images/small/setup.jpg?raw=true "Main setup")
 
 ## Aim
 The aim was to create a gesture input device to use for a laptop. One of the main goals was to be able to grab a window/pen
@@ -71,7 +71,7 @@ fingers. However, the pattern on the thumb is rotated for 90 degrees so that the
 **Note:** This part can be completed in countless different ways. I just went with this solution as it was good enough for a
 prototype as well as being very cheap (aka free :) ).
 
-![The front side of the glove with visible sensors and tracker target.](./images/small/glove_frontside.jpg?raw=true "Glove front side")
+![The front side of the glove with visible sensors and tracker target.](./images/small/glove_frontside.jpg?raw=true "The front side of the glove with visible sensors and tracker target.")
 
 ### Motion tracker target
 The program that runs on the laptop is tracking an object that is of a contrasting colour compared to the background. For this
@@ -80,7 +80,8 @@ When testing different colours and objects I realised that a small solid object 
 for the job. Should you use an object that can bend easily you might notice that flickering can increase due to the shadows
 which could cause the mouse to jump around the screen.
 
-![Tracker is tracking this green circle to move the mouse.](./images/small/tracker_target.jpg?raw=true "Tracker target")
+=======
+![Tracker is tracking this green circle to move the mouse.](./images/small/tracker_target.jpg?raw=true "Tracker is tracking this green circle to move the mouse.")
 
 ### Connect glove and Dragonboard
 Once the sensors are completed, we need to connect them to the GPIO pins on the DB. I connected them with longer wires
@@ -89,7 +90,7 @@ Now, connect the **wire from the thumb** to **pin 35 (1.8V PWR)**.
 Connect the rest of the wires to pins with numbers from **24 to 34** (including). Remember which finger you connected to which
 pin as you will need this number later!
 
-![Wires from the four fingers connected to the GPIO pins on the Dragonboard.](./images/small/gpio_connections.jpg?raw=true "GPIO connections")
+![Wires from the four fingers connected to the GPIO pins on the Dragonboard.](./images/small/gpio_connections.jpg?raw=true "Wires from the four fingers connected to the GPIO pins on the Dragonboard.")
 
 ### Connect Dragonboard with the laptop
 Now connect the power supply to the DB and use micro USB cable to connect your laptop with MicroUSB connector (J4) on the DB.
@@ -176,7 +177,7 @@ data via the USB.
 
 *Now, try using the glove you created and moving it around! Have fun!*
 
-![Glove in action.](./images/small/in_front_of_screen.jpg?raw=true "Glove in action")
+![Glove in action.](./images/small/in_front_of_screen.jpg?raw=true "Glove in action.")
 
 ## Feedback
 Whether you liked the project or not, I will be very thankful for any feedback, suggestions, comments on the project.
