@@ -185,5 +185,5 @@ Whether you liked the project or not, I will be very thankful for any feedback, 
 
 
 [0]: https://discuss.96boards.org/t/serial-read-data-via-dragonboard-usb-port/2880/3
-[1]: mailto:luka.kralj2@gmail.com
+[1]: mailto:luka.kralj.cs@gmail.com
 
