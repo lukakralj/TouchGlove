@@ -1,6 +1,6 @@
 # TouchGlove
 
-This repository contains software and instructions for creating a homemade dataglove.
+This repository contains software and instructions for creating a homemade dataglove. You can also read [a blog post](https://lukakralj.com/touch-glove/) about this project.
 
 ![Main setup](./images/small/setup.jpg?raw=true "Main setup")
 
